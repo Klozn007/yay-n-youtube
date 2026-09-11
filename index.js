@@ -1,4 +1,5 @@
 require("dotenv").config();
+console.log("🚀 KLOZN V5.1 ADMIN-ONLY RENDER BUILD");
 const {
   Client, GatewayIntentBits, Partials, PermissionsBitField,
   ChannelType, EmbedBuilder, ActionRowBuilder, ButtonBuilder,
@@ -6,41 +7,11 @@ const {
   ActivityType
 } = require("discord.js");
 const fs = require("fs");
-const http = require("http");
 
-// Render / local environment compatibility.
 const TOKEN = process.env.DISCORD_TOKEN || process.env.TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID || process.env.CLIENT_ID;
-const GUILD_ID = process.env.DISCORD_GUILD_ID || process.env.GUILD_ID || "";
-if (!TOKEN || !CLIENT_ID) throw new Error("DISCORD_TOKEN/TOKEN ve DISCORD_CLIENT_ID/CLIENT_ID gerekli.");
-
-const PORT = Number(process.env.PORT || 3000);
-const HOST = "0.0.0.0";
-
-const healthServer = http.createServer((req, res) => {
-  const path = (req.url || "/").split("?")[0];
-  const ready = Boolean(client?.isReady?.());
-  const payload = {
-    ok: true,
-    service: "KLOZN Discord Bot",
-    discordReady: ready,
-    guilds: client?.guilds?.cache?.size || 0,
-    uptimeSeconds: Math.floor(process.uptime()),
-    timestamp: new Date().toISOString()
-  };
-
-  if (path === "/health" || path === "/status") {
-    res.writeHead(ready || path === "/health" ? 200 : 503, { "Content-Type": "application/json; charset=utf-8" });
-    return res.end(JSON.stringify(payload));
-  }
-
-  res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-  res.end("KLOZN Discord Bot online");
-});
-
-healthServer.listen(PORT, HOST, () => {
-  console.log(`🌐 HTTP sağlık sunucusu: ${HOST}:${PORT}`);
-});
+const GUILD_ID = process.env.DISCORD_GUILD_ID || process.env.GUILD_ID;
+if (!TOKEN || !CLIENT_ID) throw new Error("DISCORD_TOKEN/DISCORD_CLIENT_ID (veya TOKEN/CLIENT_ID) tanımlanmalı.");
 
 const DB_FILE = "./database.json";
 const db = fs.existsSync(DB_FILE) ? JSON.parse(fs.readFileSync(DB_FILE, "utf8")) : {
@@ -126,19 +97,6 @@ function isAdmin(i) {
     i.member.permissions.has(PermissionsBitField.Flags.Administrator) ||
     i.member.roles.cache.has(guildData(i.guild.id).roles.admin);
 }
-function isAdministratorOnly(member) {
-  if (!member) return false;
-  return member.id === member.guild.ownerId ||
-    member.permissions.has(PermissionsBitField.Flags.Administrator);
-}
-
-function adminOnlyReply(i) {
-  return i.reply({
-    content: "❌ Bu botun slash komutları sadece **Administrator** yetkisine sahip üyeler tarafından kullanılabilir.",
-    ephemeral: true
-  });
-}
-
 function isMod(i) {
   return isAdmin(i) ||
     i.member.permissions.has(PermissionsBitField.Flags.ModerateMembers) ||
@@ -329,6 +287,63 @@ commands.push(
     .addStringOption(o=>o.setName("deger").setDescription("Event verisi").setRequired(false))
 );
 
+/* =============================== v4.2 =====================================
+   Hızlı yönetim + gelişmiş moderasyon komutları.
+   Yetki modeli mevcut Discord rollerine ve hiyerarşisine bağlanır.
+*/
+commands.push(
+  new SlashCommandBuilder().setName("modpanel").setDescription("Moderasyon kontrol panelini açar."),
+  new SlashCommandBuilder().setName("purge").setDescription("Mesajları toplu temizler.")
+    .addIntegerOption(o=>o.setName("miktar").setDescription("1-100").setRequired(true).setMinValue(1).setMaxValue(100)),
+  new SlashCommandBuilder().setName("unban").setDescription("Banlı kullanıcıyı sunucuya geri alır.")
+    .addStringOption(o=>o.setName("userid").setDescription("Discord kullanıcı ID'si").setRequired(true))
+    .addStringOption(o=>o.setName("sebep").setDescription("Sebep")),
+  new SlashCommandBuilder().setName("role-sync").setDescription("Hazır yetki rollerini yeniden eşitler."),
+  new SlashCommandBuilder().setName("automod-ayarla").setDescription("AutoMod seçeneklerini açar/kapatır.")
+    .addBooleanOption(o=>o.setName("spam").setDescription("Spam koruması").setRequired(true))
+    .addBooleanOption(o=>o.setName("badwords").setDescription("Kelime filtresi").setRequired(true))
+    .addBooleanOption(o=>o.setName("links").setDescription("Link koruması").setRequired(true)),
+  new SlashCommandBuilder().setName("case-notu").setDescription("Bir moderasyon kaydına not ekler.")
+    .addIntegerOption(o=>o.setName("id").setDescription("Case ID").setRequired(true).setMinValue(1))
+    .addStringOption(o=>o.setName("not").setDescription("Not").setRequired(true).setMaxLength(1000)),
+  new SlashCommandBuilder().setName("staff").setDescription("Yetkili ekibinin özetini gösterir.")
+);
+
+/* =============================== v4.3 =====================================
+   Merkezi moderasyon, rapor, ticket, raid ve oyun kontrol komutları.
+*/
+commands.push(
+  new SlashCommandBuilder().setName("mod-merkezi").setDescription("Butonlu moderasyon merkezini açar."),
+  new SlashCommandBuilder().setName("rapor").setDescription("Bir kullanıcıyı moderasyona bildirir.")
+    .addUserOption(o=>o.setName("uye").setDescription("Raporlanan üye").setRequired(true))
+    .addStringOption(o=>o.setName("sebep").setDescription("Rapor sebebi").setRequired(true).setMaxLength(500)),
+  new SlashCommandBuilder().setName("raporlar").setDescription("Açık raporları gösterir."),
+  new SlashCommandBuilder().setName("ticket-kapat").setDescription("Bulunduğun ticketı kapatır."),
+  new SlashCommandBuilder().setName("raid-mode").setDescription("Raid korumasını açar/kapatır.")
+    .addBooleanOption(o=>o.setName("aktif").setDescription("Raid modu").setRequired(true)),
+  new SlashCommandBuilder().setName("otomatik-ceza").setDescription("Uyarı sonrası otomatik ceza zincirini ayarlar.")
+    .addBooleanOption(o=>o.setName("aktif").setDescription("Aktif").setRequired(true))
+    .addIntegerOption(o=>o.setName("limit").setDescription("Uyarı limiti").setRequired(true).setMinValue(1).setMaxValue(20)),
+  new SlashCommandBuilder().setName("oyuncu").setDescription("Oyun oyuncu kaydını gösterir.")
+    .addStringOption(o=>o.setName("id").setDescription("Oyuncu ID").setRequired(true)),
+  new SlashCommandBuilder().setName("audit").setDescription("Son yönetim işlemlerini gösterir."),
+  new SlashCommandBuilder().setName("v43-sync").setDescription("v4.3 güvenlik ve yetki yapılandırmasını yeniler.")
+);
+
+async function register() {
+  // Legacy registration function intentionally kept for compatibility.
+  // Actual registration is centralized in registerAllCommands() below.
+  return registerAllCommands();
+}
+
+client.once(Events.ClientReady, async ready => {
+  console.log(`✅ ${ready.user.tag} aktif.`);
+  ready.user.setPresence({
+    activities: [{ name: `${ready.client.guilds.cache.size} sunucu | /setup`, type: ActivityType.Watching }],
+    status: "online"
+  });
+});
+
 client.on(Events.GuildMemberAdd, async m => {
   const cfg = guildData(m.guild.id);
   const ch = cfg.channels.welcome && m.guild.channels.cache.get(cfg.channels.welcome);
@@ -435,8 +450,10 @@ client.on(Events.InteractionCreate, async i => {
     }
 
     if (!i.isChatInputCommand()) return;
+    if (!i.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) {
+      return i.reply({ content: "❌ Bu botun slash komutları yalnızca Administrator yetkisine sahip üyeler içindir.", ephemeral: true }).catch(() => {});
+    }
     const c = i.commandName;
-    if (!isAdministratorOnly(i.member)) return adminOnlyReply(i);
 
     if (c === "setup") {
       if (!i.guild || !isAdmin(i)) return i.reply({ content: "❌ Sadece sunucu sahibi/yönetici.", ephemeral: true });
@@ -747,9 +764,9 @@ client.on(Events.InteractionCreate, async i => {
       return;
     }
     if (!i.isChatInputCommand() || !i.guild) return;
-    // v4.3 button işlemleri yukarıda kalır; slash komutları tek handler'da işlenir.
-    return;
-
+    if (!i.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) {
+      return i.reply({ content: "❌ Bu botun slash komutları yalnızca Administrator yetkisine sahip üyeler içindir.", ephemeral: true }).catch(() => {});
+    }
     const c=i.commandName;
 
     if(c==="mod-merkezi"){
@@ -835,10 +852,11 @@ client.on(Events.GuildMemberUpdate, async (oldMember,newMember)=>{
   }
 });
 
-process.on("SIGTERM", () => { healthServer.close(() => {}); client.destroy(); });
-process.on("SIGINT", () => { healthServer.close(() => {}); client.destroy(); });
+client.on("error", error => {
+  console.error("[DISCORD CLIENT ERROR]", error);
+});
 
-client.login(TOKEN).catch(err => { console.error("❌ Discord login hatası:", err); process.exit(1); });
+client.login(TOKEN);
 
 
 /* ========================================================================== */
@@ -877,7 +895,7 @@ client.login(TOKEN).catch(err => { console.error("❌ Discord login hatası:", e
   these services without introducing another file.
 */
 
-const ULTRA_VERSION = "5.0.0-admin-only-render";
+const ULTRA_VERSION = "4.3.0-single-file";
 const ULTRA_DB = "./ultra-database.json";
 
 const ultraDefault = {
@@ -1047,16 +1065,6 @@ function renderTemplate(text, guild, user) {
     .replaceAll("{server}", guild.name)
     .replaceAll("{memberCount}", String(guild.memberCount))
     .replaceAll("{guildId}", guild.id);
-}
-
-function guildsSafeCount() {
-  return client?.guilds?.cache?.size || 0;
-}
-
-function formatUptime(seconds) {
-  const s = Math.floor(seconds);
-  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  return `${d}g ${h}s ${m}dk ${sec}sn`;
 }
 
 function ultraCan(member, permission = "ManageGuild") {
@@ -1999,6 +2007,13 @@ const ultraCommands = [
     .setDescription("Ultra kapsamlı sunucu yapısını kurar."),
 
   new SlashCommandBuilder()
+    .setName("case")
+    .setDescription("Moderasyon case kaydını gösterir.")
+    .addIntegerOption(o =>
+      o.setName("id").setDescription("Case ID").setRequired(true).setMinValue(1)
+    ),
+
+  new SlashCommandBuilder()
     .setName("cases")
     .setDescription("Bir kullanıcının moderasyon geçmişini gösterir.")
     .addUserOption(o =>
@@ -2090,72 +2105,7 @@ const ultraCommands = [
     .setDescription("Üyenin karantinasını kaldırır.")
     .addUserOption(o =>
       o.setName("uye").setDescription("Üye").setRequired(true)
-    ),
-
-  new SlashCommandBuilder()
-    .setName("nick")
-    .setDescription("Üyenin sunucu takma adını değiştirir.")
-    .addUserOption(o => o.setName("uye").setDescription("Üye").setRequired(true))
-    .addStringOption(o => o.setName("isim").setDescription("Yeni isim").setRequired(true).setMaxLength(32)),
-
-  new SlashCommandBuilder()
-    .setName("role-ekle")
-    .setDescription("Üyeye bir rol verir.")
-    .addUserOption(o => o.setName("uye").setDescription("Üye").setRequired(true))
-    .addRoleOption(o => o.setName("rol").setDescription("Verilecek rol").setRequired(true)),
-
-  new SlashCommandBuilder()
-    .setName("role-al")
-    .setDescription("Üyeden bir rol alır.")
-    .addUserOption(o => o.setName("uye").setDescription("Üye").setRequired(true))
-    .addRoleOption(o => o.setName("rol").setDescription("Alınacak rol").setRequired(true)),
-
-  new SlashCommandBuilder()
-    .setName("kanal-kilitle")
-    .setDescription("Seçilen kanalı herkes için kilitler.")
-    .addChannelOption(o => o.setName("kanal").setDescription("Kanal").setRequired(true).addChannelTypes(ChannelType.GuildText)),
-
-  new SlashCommandBuilder()
-    .setName("kanal-ac")
-    .setDescription("Seçilen kanalın kilidini açar.")
-    .addChannelOption(o => o.setName("kanal").setDescription("Kanal").setRequired(true).addChannelTypes(ChannelType.GuildText)),
-
-  new SlashCommandBuilder()
-    .setName("kanal-olustur")
-    .setDescription("Yeni bir metin kanalı oluşturur.")
-    .addStringOption(o => o.setName("isim").setDescription("Kanal adı").setRequired(true).setMaxLength(90))
-    .addChannelOption(o => o.setName("kategori").setDescription("Kategori").setRequired(false).addChannelTypes(ChannelType.GuildCategory)),
-
-  new SlashCommandBuilder()
-    .setName("kanal-sil")
-    .setDescription("Bir kanalı siler.")
-    .addChannelOption(o => o.setName("kanal").setDescription("Silinecek kanal").setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildVoice)),
-
-  new SlashCommandBuilder()
-    .setName("duyuru-gonder")
-    .setDescription("Profesyonel embed duyurusu gönderir.")
-    .addChannelOption(o => o.setName("kanal").setDescription("Duyuru kanalı").setRequired(true).addChannelTypes(ChannelType.GuildText))
-    .addStringOption(o => o.setName("baslik").setDescription("Başlık").setRequired(true).setMaxLength(256))
-    .addStringOption(o => o.setName("metin").setDescription("Duyuru metni").setRequired(true).setMaxLength(4000)),
-
-  new SlashCommandBuilder()
-    .setName("bot-durum")
-    .setDescription("Botun çalışma ve Discord bağlantı durumunu gösterir."),
-
-  new SlashCommandBuilder()
-    .setName("xp-sifirla")
-    .setDescription("Bir üyenin XP ve level verisini sıfırlar.")
-    .addUserOption(o => o.setName("uye").setDescription("Üye").setRequired(true)),
-
-  new SlashCommandBuilder()
-    .setName("warn-sifirla")
-    .setDescription("Bir üyenin tüm uyarılarını sıfırlar.")
-    .addUserOption(o => o.setName("uye").setDescription("Üye").setRequired(true)),
-
-  new SlashCommandBuilder()
-    .setName("sunucu-kilit")
-    .setDescription("Genel sohbet kanallarını toplu kilitler/açar.")
-    .addBooleanOption(o => o.setName("aktif").setDescription("true=kilitle, false=aç").setRequired(true))
+    )
 ];
 
 /* v4.2 hızlı yönetim ve moderasyon komutları */
@@ -2181,53 +2131,86 @@ ultraCommands.push(
     .addBooleanOption(o=>o.setName("caps").setDescription("Caps koruması").setRequired(true))
 );
 
+/* v4.2: hızlı personel yönetimi + gelişmiş moderasyon */
+ultraCommands.push(
+  new SlashCommandBuilder().setName("mod-merkezi").setDescription("Moderasyon merkezini açar."),
+  new SlashCommandBuilder().setName("mod-stats").setDescription("Moderasyon istatistiklerini gösterir."),
+  new SlashCommandBuilder().setName("purge").setDescription("Kanaldaki son mesajları toplu temizler.")
+    .addIntegerOption(o=>o.setName("miktar").setDescription("1-100").setRequired(true).setMinValue(1).setMaxValue(100)),
+  new SlashCommandBuilder().setName("unban-id").setDescription("ID üzerinden ban kaldırır.")
+    .addStringOption(o=>o.setName("userid").setDescription("Discord kullanıcı ID").setRequired(true))
+    .addStringOption(o=>o.setName("sebep").setDescription("Sebep")),
+  new SlashCommandBuilder().setName("yetki-ver").setDescription("Hazır personel rolü verir.")
+    .addUserOption(o=>o.setName("uye").setDescription("Üye").setRequired(true))
+    .addStringOption(o=>o.setName("profil").setDescription("Profil").setRequired(true).addChoices(
+      {name:"Yönetici",value:"admin"},{name:"Baş Moderatör",value:"headMod"},
+      {name:"Moderatör",value:"mod"},{name:"Destek",value:"support"},{name:"Etkinlik",value:"event"}
+    )),
+  new SlashCommandBuilder().setName("yetki-al").setDescription("Hazır personel rollerini kaldırır.")
+    .addUserOption(o=>o.setName("uye").setDescription("Üye").setRequired(true)),
+  new SlashCommandBuilder().setName("role-sync").setDescription("Rolleri ve kanal izinlerini senkronize eder."),
+  new SlashCommandBuilder().setName("automod-ayarla").setDescription("AutoMod özelliklerini yapılandırır.")
+    .addBooleanOption(o=>o.setName("spam").setDescription("Spam koruması").setRequired(true))
+    .addBooleanOption(o=>o.setName("link").setDescription("Link koruması").setRequired(true))
+    .addBooleanOption(o=>o.setName("caps").setDescription("Caps koruması").setRequired(true))
+);
+
+function adminCommandJson(command) {
+  const json = command.toJSON();
+  json.default_member_permissions = String(PermissionsBitField.Flags.Administrator);
+  return json;
+}
+
+function uniqueAdminCommands() {
+  const merged = [...commands, ...ultraCommands];
+  const seen = new Set();
+  const unique = [];
+
+  for (const command of merged) {
+    const json = adminCommandJson(command);
+    if (seen.has(json.name)) continue;
+    seen.add(json.name);
+    unique.push(json);
+  }
+
+  return unique;
+}
+
+let commandsRegistered = false;
+async function registerAllCommands() {
+  if (commandsRegistered) return;
+
+  const rest = new REST({ version: "10" }).setToken(TOKEN);
+  const unique = uniqueAdminCommands();
+
+  // Remove old global commands so duplicate legacy commands disappear.
+  await rest.put(Routes.applicationCommands(CLIENT_ID), { body: [] });
+
+  if (GUILD_ID) {
+    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: unique });
+    console.log(`✅ ${unique.length} admin slash komutu GUILD'e kayıt edildi: ${GUILD_ID}`);
+  } else {
+    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: unique });
+    console.log(`✅ ${unique.length} admin slash komutu GLOBAL kayıt edildi.`);
+  }
+
+  commandsRegistered = true;
+}
+
 async function registerUltraCommands() {
   try {
-    const rest = new REST({ version: "10" }).setToken(TOKEN);
-    const merged = [...commands, ...ultraCommands];
-
-    // Tek kayıt: aynı isimli komutları bir kez tut.
-    const unique = [];
-    const seen = new Set();
-    for (const command of merged) {
-      if (seen.has(command.name)) continue;
-      seen.add(command.name);
-      unique.push(command);
-    }
-
-    // TÜM slash komutları yönetici yetkisine bağla.
-    // Discord UI'da Administrator izni olmayan kullanıcıya komutlar gösterilmez.
-    const payload = unique.map(command =>
-      command.setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator.toString()).toJSON()
-    );
-
-    if (GUILD_ID) {
-      // Eski global komutları temizle; duplicate / komutlarının ana nedeni buydu.
-      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: [] });
-      // Tek sunucu için guild komutları: değişiklikler çok daha hızlı görünür.
-      await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: payload });
-      console.log(`✅ ${payload.length} slash komut kayıt edildi (GUILD: ${GUILD_ID}).`);
-    } else {
-      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: payload });
-      console.log(`✅ ${payload.length} global slash komut kayıt edildi.`);
-    }
+    await registerAllCommands();
   } catch (e) {
     console.error("[COMMAND REGISTER]", e);
   }
 }
 
 client.once(Events.ClientReady, async ready => {
-  console.log(`
-╔══════════════════════════════════════╗
-║          KLOZN ADMIN BOT V5          ║
-╠══════════════════════════════════════╣
-║ Bot      : ${ready.user.tag}
-║ Sunucular: ${ready.client.guilds.cache.size}
-║ Yetki    : ADMINISTRATOR ONLY
-║ Durum    : AKTİF
-╚══════════════════════════════════════╝`);
   await registerUltraCommands();
-  ready.user.setPresence({ activities: [{ name: `${ready.client.guilds.cache.size} sunucu | Admin Only`, type: ActivityType.Watching }], status: "online" });
+  ready.user.setPresence({
+    activities: [{ name: `${ready.client.guilds.cache.size} sunucu | /setup`, type: ActivityType.Watching }],
+    status: "online"
+  });
   startUltraScheduler();
 
   for (const guild of client.guilds.cache.values()) {
@@ -2246,6 +2229,9 @@ client.once(Events.ClientReady, async ready => {
 client.on(Events.InteractionCreate, async interaction => {
   try {
     if (!interaction.isChatInputCommand()) return;
+    if (!interaction.memberPermissions?.has(PermissionsBitField.Flags.Administrator)) {
+      return interaction.reply({ content: "❌ Bu botun slash komutları yalnızca **Administrator** yetkisine sahip üyeler içindir.", ephemeral: true }).catch(() => {});
+    }
 
     const name = interaction.commandName;
     if (!ultraCommands.some(c => c.name === name)) return;
@@ -2260,13 +2246,6 @@ client.on(Events.InteractionCreate, async interaction => {
         ephemeral: true
       });
     }
-
-    if (!isAdministratorOnly(member)) {
-      return adminOnlyReply(interaction);
-    }
-
-    // /case, ana handler tarafından işlendiği için burada tekrar cevap verme.
-    if (name === "case") return;
 
     if (name === "full-setup") {
       if (!ultraCan(member, "Administrator")) {
@@ -2623,107 +2602,6 @@ client.on(Events.InteractionCreate, async interaction => {
           )
         ]
       });
-    }
-
-    if (name === "nick") {
-      const target = await guild.members.fetch(interaction.options.getUser("uye").id).catch(() => null);
-      const newNick = interaction.options.getString("isim");
-      if (!target) return interaction.reply({ content: "❌ Üye bulunamadı.", ephemeral: true });
-      if (target.id === guild.ownerId) return interaction.reply({ content: "❌ Sunucu sahibinin adı değiştirilemez.", ephemeral: true });
-      if (target.roles.highest.position >= member.roles.highest.position && member.id !== guild.ownerId)
-        return interaction.reply({ content: "❌ Bu üye senin rol hiyerarşine eşit/yüksek.", ephemeral: true });
-      await target.setNickname(newNick, `Nick değişikliği | ${interaction.user.tag}`);
-      v43WriteAudit(guild, interaction.user.id, "NICK_CHANGE", target.id, { nickname: newNick });
-      await ultraSendLog(guild, "NICK", "✏️ Nick Değiştirildi", `${target}
-Yeni isim: **${newNick}**
-Yetkili: ${interaction.user}`);
-      return interaction.reply({ content: `✅ ${target} → **${newNick}**`, ephemeral: true });
-    }
-
-    if (name === "role-ekle" || name === "role-al") {
-      const target = await guild.members.fetch(interaction.options.getUser("uye").id).catch(() => null);
-      const role = interaction.options.getRole("rol");
-      if (!target || !role) return interaction.reply({ content: "❌ Üye veya rol bulunamadı.", ephemeral: true });
-      if (role.managed || role.id === guild.id) return interaction.reply({ content: "❌ Bu rol yönetilemez.", ephemeral: true });
-      if (role.position >= member.roles.highest.position && member.id !== guild.ownerId)
-        return interaction.reply({ content: "❌ Bu rol senin en yüksek rolünle eşit/yüksek.", ephemeral: true });
-      if (target.id === guild.ownerId) return interaction.reply({ content: "❌ Sunucu sahibine rol işlemi yapılamaz.", ephemeral: true });
-      if (target.roles.highest.position >= member.roles.highest.position && member.id !== guild.ownerId)
-        return interaction.reply({ content: "❌ Bu üye senin rol hiyerarşine eşit/yüksek.", ephemeral: true });
-      if (name === "role-ekle") await target.roles.add(role, `Rol verildi | ${interaction.user.tag}`);
-      else await target.roles.remove(role, `Rol alındı | ${interaction.user.tag}`);
-      v43WriteAudit(guild, interaction.user.id, name === "role-ekle" ? "ROLE_ADD" : "ROLE_REMOVE", target.id, { roleId: role.id });
-      return interaction.reply({ content: `✅ ${role} ${target} kullanıcısına ${name === "role-ekle" ? "verildi" : "alındı"}.`, ephemeral: true });
-    }
-
-    if (name === "kanal-kilitle" || name === "kanal-ac") {
-      const channel = interaction.options.getChannel("kanal");
-      await channel.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: name === "kanal-kilitle" ? false : null });
-      v43WriteAudit(guild, interaction.user.id, name === "kanal-kilitle" ? "CHANNEL_LOCK" : "CHANNEL_UNLOCK", channel.id);
-      return interaction.reply({ content: name === "kanal-kilitle" ? `🔒 ${channel} kilitlendi.` : `🔓 ${channel} açıldı.`, ephemeral: true });
-    }
-
-    if (name === "kanal-olustur") {
-      const raw = interaction.options.getString("isim").toLowerCase().replace(/[^a-z0-9ğüşöçıİĞÜŞÖÇ_-]/gi, "-").replace(/-+/g, "-").slice(0, 90);
-      const parent = interaction.options.getChannel("kategori");
-      const channel = await guild.channels.create({ name: raw || "yeni-kanal", type: ChannelType.GuildText, parent: parent?.id || null });
-      v43WriteAudit(guild, interaction.user.id, "CHANNEL_CREATE", channel.id, { name: channel.name });
-      return interaction.reply({ content: `✅ Kanal oluşturuldu: ${channel}`, ephemeral: true });
-    }
-
-    if (name === "kanal-sil") {
-      const channel = interaction.options.getChannel("kanal");
-      const channelName = channel.name;
-      const channelId = channel.id;
-      await channel.delete(`Kanal silindi | ${interaction.user.tag}`);
-      v43WriteAudit(guild, interaction.user.id, "CHANNEL_DELETE", channelId, { name: channelName });
-      return interaction.reply({ content: `🗑️ **${channelName}** silindi.`, ephemeral: true });
-    }
-
-    if (name === "duyuru-gonder") {
-      const channel = interaction.options.getChannel("kanal");
-      const title = interaction.options.getString("baslik");
-      const text = interaction.options.getString("metin");
-      const message = await channel.send({
-        embeds: [new EmbedBuilder().setTitle(`📢 ${title}`).setDescription(text).setFooter({ text: `KLOZN • ${guild.name}` }).setTimestamp().setColor(0x5865F2)]
-      });
-      v43WriteAudit(guild, interaction.user.id, "ANNOUNCEMENT", channel.id, { messageId: message.id });
-      return interaction.reply({ content: `✅ Duyuru gönderildi: ${channel}`, ephemeral: true });
-    }
-
-    if (name === "bot-durum") {
-      return interaction.reply({ embeds: [embed("🤖 KLOZN Bot Durumu", `🟢 Discord: **${client.isReady() ? "Bağlı" : "Bağlı değil"}**
-🌐 Guild: **${guildsSafeCount()}**
-⏱️ Uptime: **${formatUptime(process.uptime())}**
-💾 RAM: **${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB**
-📡 WS: **${client.ws.status}**`)], ephemeral: true });
-    }
-
-    if (name === "xp-sifirla") {
-      const target = interaction.options.getUser("uye");
-      const d = userData(guild.id, target.id); d.xp = 0; d.level = 1; save();
-      v43WriteAudit(guild, interaction.user.id, "XP_RESET", target.id);
-      return interaction.reply({ content: `✅ ${target} XP/level verisi sıfırlandı.`, ephemeral: true });
-    }
-
-    if (name === "warn-sifirla") {
-      const target = interaction.options.getUser("uye");
-      const d = userData(guild.id, target.id); const count = d.warnings?.length || 0; d.warnings = []; save();
-      v43WriteAudit(guild, interaction.user.id, "WARN_RESET", target.id, { count });
-      return interaction.reply({ content: `✅ ${target} kullanıcısının **${count}** uyarısı sıfırlandı.`, ephemeral: true });
-    }
-
-    if (name === "sunucu-kilit") {
-      const active = interaction.options.getBoolean("aktif");
-      const keys = ["general", "media", "games", "suggestions", "event", "commands"];
-      let changed = 0;
-      for (const key of keys) {
-        const ch = guild.channels.cache.get(guildData(guild.id).channels[key]);
-        if (ch?.isTextBased()) { await ch.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: active ? false : null }).catch(() => {}); changed++; }
-      }
-      ultraGuild(guild.id).lockdown = active; ultraSave();
-      v43WriteAudit(guild, interaction.user.id, active ? "SERVER_LOCK" : "SERVER_UNLOCK", null, { changed });
-      return interaction.reply({ content: `${active ? "🔒 Sunucu genel sohbeti kilitlendi" : "🔓 Sunucu genel sohbeti açıldı"}. **${changed}** kanal güncellendi.`, ephemeral: true });
     }
 
     if (name === "quarantine" || name === "unquarantine") {
