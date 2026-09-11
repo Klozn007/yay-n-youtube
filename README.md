@@ -1,41 +1,31 @@
-# KLOZN Discord Bot — Render + UptimeRobot 24/7
+# KLOZN Discord Bot V6
 
-Bu sürüm Render Web Service + UptimeRobot için tasarlanmıştır. PM2 kullanılmaz; Render process yaşam döngüsünü yönetir. Bot ayrıca `0.0.0.0:$PORT` üzerinde HTTP sunucusu açar.
+Render + UptimeRobot uyumlu, temiz komut kayıt sistemi ve Administrator-only slash komutları.
 
 ## Render
-1. Projeyi GitHub'a yükle.
-2. Render → New → Web Service ile repo'yu bağla.
-3. Build Command: `npm ci`
-4. Start Command: `npm start`
-5. Health Check Path: `/health`
-6. Environment Variables: `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_GUILD_ID`
+Build: `npm install`
+Start: `npm start`
+Health: `/health`
+UptimeRobot: `/status`
 
-`render.yaml` kullanıyorsan ayarlar otomatik gelir.
+Environment Variables:
+- `DISCORD_TOKEN`
+- `DISCORD_CLIENT_ID`
+- `DISCORD_GUILD_ID`
+- `NODE_ENV=production`
+
+## Discord Bot Permissions / Intents
+Botu sunucuya eklerken en az şu izinler gerekir: View Channels, Send Messages, Embed Links, Read Message History, Manage Messages, Manage Channels, Manage Roles, Moderate Members, Kick Members, Ban Members, Mention Everyone (duyuruda kullanılacaksa).
+Message Content ve Server Members intentlerini Discord Developer Portal'dan aç.
+
+## Slash command duplicates
+`DISCORD_GUILD_ID` doluysa komutlar doğrudan sunucuya kaydedilir ve global application commands boşaltılır. Kod ayrıca komut listesini isim bazında tekilleştirir.
+
+## Admin-only
+Tüm slash komutları Discord tarafında `Administrator` default permission ile yayınlanır ve interaction sırasında ikinci bir Administrator kontrolünden geçirilir. Butonla açılan ticket gibi kullanıcı etkileşimleri slash komut değildir ve normal kullanıcılar tarafından kullanılabilir.
 
 ## UptimeRobot
-Render'ın verdiği `https://...onrender.com` adresiyle HTTP(s) monitor oluştur:
-- URL: `https://...onrender.com/status`
-- Method: GET
-- Interval: 5 minutes (planının izin verdiği en kısa aralık)
-- Expected status: 200
+HTTP(s) monitor ile `https://SENIN-RENDER-URL/status` adresini 5 dakikada bir kontrol et. `/status` Discord bağlantısı hazır değilse 503 döndürür.
 
-`/health` Render'ın process sağlık kontrolü içindir. `/status` ise Discord Gateway hazır olduğunda 200, hazır değilse 503 döndürür.
-
-## 24/7 gerçeği
-Render Free web services 15 dakika inbound trafik gelmezse sleep olabilir; düzenli UptimeRobot istekleri idle sleep'i önlemeye yardımcı olur. Ancak Free plan yine de aylık 750 saat sınırına ve Render'ın zaman zaman yeniden başlatmasına tabidir. Gerçek üretim seviyesinde always-on çalışma için ücretli Render compute planı önerilir.
-
-## Veri
-`data.json` Render'ın ephemeral filesystem'inde tutulur; restart/redeploy/sleep durumlarında kalıcı değildir. XP, uyarı ve AFK verileri kalıcı olacaksa veritabanına geçirilmelidir.
-
-## Discord
-Gerekli privileged intents: Guild Members ve Message Content. Developer Portal'da açılmalıdır.
-
-## Lokal test
-```bash
-npm ci
-npm start
-```
-Kontrol: `http://localhost:10000/health` ve `http://localhost:10000/status`
-
-## Güvenlik
-Tokenı GitHub'a veya sohbetlere koyma; `.env` dosyasını commit etme.
+## Data
+Varsayılan olarak `data/klozn.json` kullanılır. Render'ın ephemeral diskinde kalıcı veri garanti edilmez; kalıcı production verisi için harici DB eklenmesi önerilir.

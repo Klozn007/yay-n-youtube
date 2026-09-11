@@ -1,18 +1,9 @@
 {
   "name": "klozn-discord-bot",
-  "version": "4.0.0",
-  "private": true,
-  "description": "KLOZN Creator Discord bot - Render + UptimeRobot 24/7",
+  "version": "6.0.0",
+  "description": "KLOZN Discord Bot - Render + UptimeRobot, admin-only slash commands",
   "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
-  },
-  "dependencies": {
-    "discord.js": "^14.25.1",
-    "dotenv": "^16.6.1"
-  },
-  "engines": {
-    "node": ">=24.17.0"
-  }
+  "scripts": {"start": "node index.js"},
+  "engines": {"node": ">=20"},
+  "dependencies": {"discord.js": "^14.25.1", "dotenv": "^17.2.2"}
 }
