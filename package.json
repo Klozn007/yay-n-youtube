@@ -1,12 +1,17 @@
 {
   "name": "klozn-discord-bot",
-  "version": "9.0.0",
-  "description": "KLOZN Creator Discord bot - streamer/content creator server template",
+  "version": "8.2.0",
+  "description": "KLOZN Creator Discord Bot - tam sunucu yenileme + gelişmiş yayıncı/içerik üreticisi/kadın alanları",
+  "private": true,
   "main": "index.js",
-  "scripts": { "start": "node index.js" },
-  "engines": { "node": ">=18.17.0" },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
-    "discord.js": "^14.25.1",
-    "dotenv": "^17.2.2"
+    "discord.js": "^14.25.1"
   }
 }
