@@ -1,9 +1,17 @@
 {
-  "name": "klozn-discord-bot",
-  "version": "6.0.0",
-  "description": "KLOZN Discord Bot - Render + UptimeRobot, admin-only slash commands",
+  "name": "klozn-discord-bot-v8",
+  "version": "8.0.0",
+  "description": "KLOZN Discord bot - Render/UptimeRobot ready",
   "main": "index.js",
-  "scripts": {"start": "node index.js"},
-  "engines": {"node": ">=20"},
-  "dependencies": {"discord.js": "^14.25.1", "dotenv": "^17.2.2"}
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "engines": {
+    "node": ">=20 <27"
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "dotenv": "^17.2.2"
+  }
 }
