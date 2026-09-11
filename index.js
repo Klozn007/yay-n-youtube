@@ -336,8 +336,23 @@ async function register() {
 client.once(Events.ClientReady, async ready => {
   console.log(`✅ ${ready.user.tag} aktif.`);
   await register();
-  ready.user.setPresence({ activities: [{ name: `${ready.client.guilds.cache.size} sunucu | /setup`, type: ActivityType.Watching }], status: "online" });
-});
+client.once(Events.ClientReady, async clientReady => {
+  console.log(`✅ ${clientReady.user.tag} aktif.`);
+
+  await register();
+
+  clientReady.user.setPresence({
+    activities: [
+      {
+        name: `${clientReady.guilds.cache.size} sunucu | /setup`,
+        type: ActivityType.Watching
+      }
+    ],
+    status: "online"
+  });
+
+  console.log(`🌐 ${clientReady.guilds.cache.size} sunucuda aktif.`);
+});});
 
 client.on(Events.GuildMemberAdd, async m => {
   const cfg = guildData(m.guild.id);
