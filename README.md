@@ -1,31 +1,29 @@
-# KLOZN Discord Bot V6
+# KLOZN V8
 
-Render + UptimeRobot uyumlu, temiz komut kayıt sistemi ve Administrator-only slash komutları.
+## Render Environment Variables
+- `TOKEN` = Discord bot token
+- `CLIENT_ID` = Discord application/client ID
+- `GUILD_ID` = optional test server ID (guild command registration is faster); leave empty for global commands
+- `HOURLY_RESTART` = `false` recommended; `true` enables a controlled hourly process restart
 
 ## Render
-Build: `npm install`
-Start: `npm start`
-Health: `/health`
-UptimeRobot: `/status`
+- Runtime: Node
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Health Check Path: `/health`
 
-Environment Variables:
-- `DISCORD_TOKEN`
-- `DISCORD_CLIENT_ID`
-- `DISCORD_GUILD_ID`
-- `NODE_ENV=production`
-
-## Discord Bot Permissions / Intents
-Botu sunucuya eklerken en az şu izinler gerekir: View Channels, Send Messages, Embed Links, Read Message History, Manage Messages, Manage Channels, Manage Roles, Moderate Members, Kick Members, Ban Members, Mention Everyone (duyuruda kullanılacaksa).
-Message Content ve Server Members intentlerini Discord Developer Portal'dan aç.
-
-## Slash command duplicates
-`DISCORD_GUILD_ID` doluysa komutlar doğrudan sunucuya kaydedilir ve global application commands boşaltılır. Kod ayrıca komut listesini isim bazında tekilleştirir.
-
-## Admin-only
-Tüm slash komutları Discord tarafında `Administrator` default permission ile yayınlanır ve interaction sırasında ikinci bir Administrator kontrolünden geçirilir. Butonla açılan ticket gibi kullanıcı etkileşimleri slash komut değildir ve normal kullanıcılar tarafından kullanılabilir.
+The bot binds to `0.0.0.0:$PORT` and exposes `/health` for UptimeRobot.
 
 ## UptimeRobot
-HTTP(s) monitor ile `https://SENIN-RENDER-URL/status` adresini 5 dakikada bir kontrol et. `/status` Discord bağlantısı hazır değilse 503 döndürür.
+Monitor Type: HTTP(s)
+URL: `https://YOUR-SERVICE.onrender.com/health`
+Recommended interval: 5 minutes.
 
-## Data
-Varsayılan olarak `data/klozn.json` kullanılır. Render'ın ephemeral diskinde kalıcı veri garanti edilmez; kalıcı production verisi için harici DB eklenmesi önerilir.
+## Important Discord permissions
+The bot needs Administrator permission. Its bot role must be above roles it must create/manage. Discord-managed roles cannot be deleted by the bot.
+
+## Women area
+`👩 Kadın` is an explicit access role. The bot does not infer gender. Other members can see the channel/category but cannot read history, send messages, or connect to the women voice channel. `Administrator` can access it.
+
+## Destructive rebuild
+`/sunucu-yenile onay:true` deletes all deletable channels and non-managed roles, then recreates the KLOZN structure. This is intentionally destructive.
