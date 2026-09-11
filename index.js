@@ -9,7 +9,8 @@ const {
     ButtonBuilder,
     ButtonStyle,
     REST,
-    Routes
+    Routes,
+    ActivityType
 } = require("discord.js");
 
 const https = require("https");
@@ -328,7 +329,18 @@ startHttpServer();
 // CLIENT READY
 // =====================================================
 
-client.once("ready", async () => {
+async function refreshPresence() {
+    if (!client.user) return;
+    client.user.setPresence({
+        activities: [{
+            name: "Klozn • Kick & YouTube",
+            type: ActivityType.Watching
+        }],
+        status: "online"
+    });
+}
+
+client.once("clientReady", async () => {
 
     lastReadyAt = Date.now();
 
@@ -343,17 +355,7 @@ client.once("ready", async () => {
 ╚══════════════════════════════════════╝
     `);
 
-    client.user.setPresence({
-
-        activities: [
-            {
-                name: "Klozn • Kick & YouTube",
-                type: 3
-            }
-        ],
-
-        status: "online"
-    });
+    await refreshPresence();
 
     await registerCommands();
 
@@ -376,6 +378,16 @@ client.once("ready", async () => {
             `[HEALTH] ${new Date().toISOString()} | guilds=${client.guilds.cache.size} | ws=${wsStatus} | ready=${Boolean(lastReadyAt)}`
         );
     }, CONFIG.HEALTH_INTERVAL_MS);
+
+    // Discord oturumundan sonra presence'ı düzenli olarak yenile.
+    setInterval(() => {
+        if (client.readyAt) refreshPresence().catch(err => console.error("❌ Presence hatası:", err));
+    }, 60_000);
+});
+
+// Gateway yeniden bağlandığında presence'ı tekrar gönder.
+client.on("shardResume", () => {
+    refreshPresence().catch(err => console.error("❌ Presence yenileme hatası:", err));
 });
 
 // =====================================================
