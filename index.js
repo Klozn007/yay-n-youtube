@@ -466,80 +466,40 @@ async function setupServer(guild) {
 }
 
 const MANAGED_CATEGORY_NAMES = new Set(Object.values(CATEGORY_NAMES));
-const MANAGED_ROLE_NAMES = new Set(Object.values(ROLE_NAMES));
 
 async function refreshServer(guild) {
   if (!guild) throw new Error("Sunucu bulunamadı.");
-  if (!guild.members.me?.permissions.has(PermissionFlagsBits.Administrator)) {
-    throw new Error("Botun Administrator yetkisi olmalı.");
-  }
 
-  // /sunucu-yenile = KLOZN'un yönettiği yapıyı GERÇEKTEN sıfırdan kurar.
-  // Manuel/alakasız kategori ve kanallara dokunulmaz.
-  // Kadın kategorisi de MANAGED_CATEGORY_NAMES içinde olduğu için tamamen
-  // silinip yeni Kadın rolü + izinleriyle tekrar oluşturulur.
+  // Sadece BOTUN YÖNETTİĞİ kategori ve alt kanallar silinir.
+  // Sunucudaki alakasız/manuel kanallara dokunulmaz.
   const managedCategories = guild.channels.cache.filter(
     c => c.type === ChannelType.GuildCategory && MANAGED_CATEGORY_NAMES.has(c.name)
   );
 
   let deletedChannels = 0;
   let deletedCategories = 0;
-  let failedChannels = 0;
 
   for (const category of managedCategories.values()) {
     const children = guild.channels.cache.filter(c => c.parentId === category.id);
     for (const channel of children.values()) {
       try {
-        await channel.delete("KLOZN /sunucu-yenile: managed channel reset");
+        await channel.delete("KLOZN /sunucu-yenile");
         deletedChannels++;
       } catch (err) {
-        failedChannels++;
-        console.error(`[SUNUCU-YENILE] Kanal silinemedi (${channel.name}):`, err.message);
+        console.error(`Kanal silinemedi (${channel.name}):`, err.message);
       }
     }
 
     try {
-      await category.delete("KLOZN /sunucu-yenile: managed category reset");
+      await category.delete("KLOZN /sunucu-yenile");
       deletedCategories++;
     } catch (err) {
-      console.error(`[SUNUCU-YENILE] Kategori silinemedi (${category.name}):`, err.message);
-    }
-  }
-
-  // Önce botun oluşturduğu/yönettiği roller sıfırlanır.
-  // @everyone, botun kendi managed rolü ve botun üstündeki roller ASLA silinmez.
-  let deletedRoles = 0;
-  let failedRoles = 0;
-  const botHighest = guild.members.me.roles.highest.position;
-  const managedRoles = guild.roles.cache.filter(
-    r => !r.managed && MANAGED_ROLE_NAMES.has(r.name) && r.id !== guild.id
-  );
-
-  for (const role of managedRoles.values()) {
-    if (role.managed || role.id === guild.id || role.position >= botHighest) {
-      failedRoles++;
-      console.warn(`[SUNUCU-YENILE] Rol silinmedi (hiyerarşi/managed): ${role.name}`);
-      continue;
-    }
-
-    try {
-      await role.delete("KLOZN /sunucu-yenile: managed role reset");
-      deletedRoles++;
-    } catch (err) {
-      failedRoles++;
-      console.error(`[SUNUCU-YENILE] Rol silinemedi (${role.name}):`, err.message);
+      console.error(`Kategori silinemedi (${category.name}):`, err.message);
     }
   }
 
   const result = await setupServer(guild);
-  return {
-    deletedChannels,
-    deletedCategories,
-    deletedRoles,
-    failedChannels,
-    failedRoles,
-    ...result
-  };
+  return { deletedChannels, deletedCategories, ...result };
 }
 
 async function logAction(guild, title, description) {
@@ -567,7 +527,7 @@ const commands = [
   },
   {
     name: "sunucu-yenile",
-    description: "KLOZN'un yönettiği kanalları, kategorileri ve rolleri sıfırdan yeniler.",
+    description: "KLOZN kategorilerini ve kanallarını sıfırdan yeniden oluşturur.",
     default_member_permissions: PermissionFlagsBits.Administrator.toString()
   },
   {
@@ -732,20 +692,19 @@ async function handleCommand(interaction) {
     await interaction.reply({
       content:
         "♻️ **Sunucu yenileme başlıyor...**\n" +
-        "KLOZN'un yönettiği kategori/kanallar ve roller silinip yeniden oluşturulacak. " +
-        "Manuel/alakasız kanallara dokunulmayacak.",
+        "Botun yönettiği kategori ve kanallar silinip yeniden oluşturulacak. " +
+        "Diğer manuel kanallara dokunulmayacak.",
       ephemeral: true
     });
 
     try {
       const result = await refreshServer(guild);
       await interaction.editReply(
-        `✅ **Sunucu sistemi tamamen sıfırdan yenilendi.**\n` +
+        `✅ **Sunucu sistemi yenilendi.**\n` +
         `🗑️ Silinen kanal: **${result.deletedChannels}**\n` +
         `🗑️ Silinen kategori: **${result.deletedCategories}**\n` +
-        `🎭 Silinen/yeni oluşturulan yönetilen rol: **${result.deletedRoles}** / **${result.roleCount}**\n` +
-        `🌸 Kadın rolü + kadın kanalları yeniden oluşturuldu.\n` +
-        (result.failedChannels || result.failedRoles ? `⚠️ Atlanan işlem: kanal **${result.failedChannels}**, rol **${result.failedRoles}** (hiyerarşi/Discord kısıtı).` : "")
+        `🎭 Roller senkronlandı: **${result.roleCount}**\n` +
+        `🌸 Kadınlara özel alan yeniden kuruldu.`
       );
       await logAction(guild, "♻️ SUNUCU YENİLE", `${interaction.user.tag} /sunucu-yenile çalıştırdı.`);
     } catch (err) {

@@ -1,29 +1,23 @@
-# KLOZN V8
+# KLOZN Creator Bot v9
 
-## Render Environment Variables
-- `TOKEN` = Discord bot token
-- `CLIENT_ID` = Discord application/client ID
-- `GUILD_ID` = optional test server ID (guild command registration is faster); leave empty for global commands
-- `HOURLY_RESTART` = `false` recommended; `true` enables a controlled hourly process restart
+## Dosyalar
+- index.js
+- package.json
+- .env.example
 
-## Render
-- Runtime: Node
-- Build Command: `npm install`
-- Start Command: `npm start`
-- Health Check Path: `/health`
+## Render / Discord ayarları
+1. GitHub'a `index.js` ve `package.json` yükle.
+2. Render Environment Variables bölümüne `.env.example` içindeki değerleri ekle.
+3. `TOKEN` = Discord bot token
+4. `CLIENT_ID` = Discord Developer Portal Application ID
+5. `GUILD_ID` = Sunucu ID (önerilir; slash komutları anında güncellenir)
+6. `RESTART_HOURS=1` botu kontrollü olarak yaklaşık her 1 saatte bir yeniden başlatır.
+7. Start Command: `npm start`
 
-The bot binds to `0.0.0.0:$PORT` and exposes `/health` for UptimeRobot.
-
-## UptimeRobot
-Monitor Type: HTTP(s)
-URL: `https://YOUR-SERVICE.onrender.com/health`
-Recommended interval: 5 minutes.
-
-## Important Discord permissions
-The bot needs Administrator permission. Its bot role must be above roles it must create/manage. Discord-managed roles cannot be deleted by the bot.
-
-## Women area
-`👩 Kadın` is an explicit access role. The bot does not infer gender. Other members can see the channel/category but cannot read history, send messages, or connect to the women voice channel. `Administrator` can access it.
-
-## Destructive rebuild
-`/sunucu-yenile onay:true` deletes all deletable channels and non-managed roles, then recreates the KLOZN structure. This is intentionally destructive.
+## Önemli
+- `/sunucu-yenile` mevcut kanalları siler ve şablonu yeniden oluşturur.
+- Şablonun yönettiği eski roller temizlenir; @everyone, managed roller ve botun üst rolü korunur.
+- `/sunucu-yenile`, `/ban`, `/kick`, `/mute`, `/warn`, `/temizle`, `/rol-ver` vb. yönetim komutları yalnızca Discord'da Administrator yetkisine sahip üyelerde çalışır.
+- `Yayıncı` ve `İçerik Üreticisi` rolleri creator kanallarına erişir.
+- `🌸・KADINLARA ÖZEL` kategorisi yalnızca `Kadın Üye`, `Kadın Yönetim`, `KLOZN` ve `Yönetim` rollerine görünür.
+- Discord rolü tek başına bir kişinin cinsiyetini doğrulamaz; erişim rol tabanlıdır.
