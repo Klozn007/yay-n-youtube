@@ -485,6 +485,11 @@ async function commandHandler(i) {
   const g = i.guild;
   const name = i.commandName;
 
+  // Discord interactions must be acknowledged within ~3 seconds.
+  // Defer immediately so long operations (ticket creation, setup, cleanup)
+  // never produce "Uygulama yanıt vermedi".
+  await i.deferReply({ flags: MessageFlags.Ephemeral });
+
   // Discord UI'da default permissions ayrıca uygulanır; bu sunucu tarafındaki ikinci güvenlik katmanıdır.
   const permissionMap = {
     "sunucu-yenile": () => admin(i),
@@ -513,18 +518,18 @@ async function commandHandler(i) {
     "anket": () => i.memberPermissions?.has(PermissionFlagsBits.ManageMessages),
   };
   if (permissionMap[name] && !permissionMap[name]()) {
-    return i.reply({ content: "🔒 Bu komutu kullanmak için gerekli yönetim iznine sahip değilsin.", flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: "🔒 Bu komutu kullanmak için gerekli yönetim iznine sahip değilsin.", flags: MessageFlags.Ephemeral });
   }
 
-  if (name === "ping") return i.reply({ content: `🏓 Pong! **${client.ws.ping}ms**`, flags: MessageFlags.Ephemeral });
-  if (name === "bilgi") return i.reply({
+  if (name === "ping") return i.editReply({ content: `🏓 Pong! **${client.ws.ping}ms**`, flags: MessageFlags.Ephemeral });
+  if (name === "bilgi") return i.editReply({
     embeds: [new EmbedBuilder().setTitle("🎥 KLOZN CREATOR").setDescription(
       "🔴 Yayıncı Merkezi\n🎬 İçerik Üretici Merkezi\n🛡️ Moderasyon\n🎫 Destek\n🌸 Kadınlara Özel\n🔐 Log Merkezi"
     )], flags: MessageFlags.Ephemeral
   });
 
   if (name === "sunucu-yenile") {
-    await i.reply({ content: "♻️ **Tam sunucu yenileme başladı.** Kanallar ve yönetilebilir roller silinip şablon baştan kuruluyor...", flags: MessageFlags.Ephemeral });
+    await i.editReply({ content: "♻️ **Tam sunucu yenileme başladı.** Kanallar ve yönetilebilir roller silinip şablon baştan kuruluyor...", flags: MessageFlags.Ephemeral });
     try {
       const x = await fullReset(g);
       await i.editReply(`✅ **Sunucu tamamen yenilendi!**\n🗑️ Kanallar: ${x.deletedChannels}\n⚠️ Silinemeyen kanallar: ${x.failedChannels}\n🎭 Roller: ${x.deletedRoles}\n⚠️ Silinemeyen roller: ${x.failedRoles}\n🏗️ Yeni roller: ${x.roles}`);
@@ -536,7 +541,7 @@ async function commandHandler(i) {
   }
 
   if (name === "kurulum") {
-    await i.reply({ content: "🏗️ KLOZN şablonu kuruluyor...", flags: MessageFlags.Ephemeral });
+    await i.editReply({ content: "🏗️ KLOZN şablonu kuruluyor...", flags: MessageFlags.Ephemeral });
     try { await buildTemplate(g); await i.editReply("✅ Şablon kuruldu."); }
     catch (e) { await i.editReply(`❌ Kurulum hatası: ${e.message}`); }
     return;
@@ -545,116 +550,116 @@ async function commandHandler(i) {
   if (name === "duyuru") {
     const msg = i.options.getString("mesaj", true);
     await g.channels.cache.find(c => c.name === CH.ANNOUNCE)?.send({ embeds: [new EmbedBuilder().setTitle("📢 KLOZN DUYURU").setDescription(msg).setTimestamp()] });
-    return i.reply({ content: "✅ Duyuru gönderildi.", flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: "✅ Duyuru gönderildi.", flags: MessageFlags.Ephemeral });
   }
 
   if (name === "ban") {
-    const m = i.options.getMember("uye"); if (!m?.bannable) return i.reply({ content: "❌ Bu üyeyi banlayamıyorum.", flags: MessageFlags.Ephemeral });
+    const m = i.options.getMember("uye"); if (!m?.bannable) return i.editReply({ content: "❌ Bu üyeyi banlayamıyorum.", flags: MessageFlags.Ephemeral });
     await m.ban({ reason: i.options.getString("sebep") || "Belirtilmedi" });
-    return i.reply({ content: `🔨 ${m.user.tag} banlandı.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `🔨 ${m.user.tag} banlandı.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "mute") {
     const m = i.options.getMember("uye"); const mins = i.options.getInteger("dakika", true);
-    if (!m?.moderatable) return i.reply({ content: "❌ Bu üyeyi susturamıyorum.", flags: MessageFlags.Ephemeral });
+    if (!m?.moderatable) return i.editReply({ content: "❌ Bu üyeyi susturamıyorum.", flags: MessageFlags.Ephemeral });
     await m.timeout(mins * 60000, i.options.getString("sebep") || "Belirtilmedi");
-    return i.reply({ content: `🔇 ${m.user.tag} ${mins} dakika susturuldu.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `🔇 ${m.user.tag} ${mins} dakika susturuldu.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "temizle") {
     const amount = i.options.getInteger("miktar", true);
-    if (!i.channel?.isTextBased() || !("bulkDelete" in i.channel)) return i.reply({ content: "❌ Bu kanalda kullanılamaz.", flags: MessageFlags.Ephemeral });
+    if (!i.channel?.isTextBased() || !("bulkDelete" in i.channel)) return i.editReply({ content: "❌ Bu kanalda kullanılamaz.", flags: MessageFlags.Ephemeral });
     const result = await i.channel.bulkDelete(amount, true);
-    return i.reply({ content: `🧹 ${result.size} mesaj silindi.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `🧹 ${result.size} mesaj silindi.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "kadin-rol") {
     const m = i.options.getMember("uye"), action = i.options.getString("islem", true), r = role(g, R.KADIN);
-    if (!m || !r) return i.reply({ content: "❌ Üye veya Kadın rolü bulunamadı.", flags: MessageFlags.Ephemeral });
+    if (!m || !r) return i.editReply({ content: "❌ Üye veya Kadın rolü bulunamadı.", flags: MessageFlags.Ephemeral });
     if (action === "ver") await m.roles.add(r); else await m.roles.remove(r);
-    return i.reply({ content: action === "ver" ? `🌸 ${m} kullanıcısına Kadın rolü verildi.` : `🌸 ${m} kullanıcısından Kadın rolü kaldırıldı.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: action === "ver" ? `🌸 ${m} kullanıcısına Kadın rolü verildi.` : `🌸 ${m} kullanıcısından Kadın rolü kaldırıldı.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "rol-ver") {
     const m = i.options.getMember("uye"), which = i.options.getString("rol", true);
     const map = { yayinci: R.YAYINCI, icerik: R.ICERIK, vip: R.VIP, izleyici: R.IZLEYICI };
     const r = role(g, map[which]);
-    if (!m || !r) return i.reply({ content: "❌ Üye veya rol bulunamadı.", flags: MessageFlags.Ephemeral });
+    if (!m || !r) return i.editReply({ content: "❌ Üye veya rol bulunamadı.", flags: MessageFlags.Ephemeral });
     await m.roles.add(r);
-    return i.reply({ content: `✅ ${m} → **${r.name}** verildi.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `✅ ${m} → **${r.name}** verildi.`, flags: MessageFlags.Ephemeral });
   }
 
 
   if (name === "say") {
     const msg = i.options.getString("mesaj", true);
     await i.channel.send({ content: msg });
-    return i.reply({ content: "✅ Mesaj gönderildi.", flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: "✅ Mesaj gönderildi.", flags: MessageFlags.Ephemeral });
   }
 
   if (name === "embed") {
     const title = i.options.getString("baslik", true);
     const desc = i.options.getString("aciklama", true);
     await i.channel.send({ embeds: [new EmbedBuilder().setTitle(title).setDescription(desc).setTimestamp()] });
-    return i.reply({ content: "✅ Embed gönderildi.", flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: "✅ Embed gönderildi.", flags: MessageFlags.Ephemeral });
   }
 
   if (name === "kick") {
     const m = i.options.getMember("uye");
-    if (!m?.kickable) return i.reply({ content: "❌ Bu üyeyi atamıyorum. Rol hiyerarşisini kontrol et.", flags: MessageFlags.Ephemeral });
+    if (!m?.kickable) return i.editReply({ content: "❌ Bu üyeyi atamıyorum. Rol hiyerarşisini kontrol et.", flags: MessageFlags.Ephemeral });
     await m.kick(i.options.getString("sebep") || "Belirtilmedi");
-    return i.reply({ content: `👢 ${m.user.tag} sunucudan atıldı.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `👢 ${m.user.tag} sunucudan atıldı.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "unban") {
     const id = i.options.getString("kullanici_id", true);
     await g.bans.remove(id);
-    return i.reply({ content: `✅ \`${id}\` kullanıcısının banı kaldırıldı.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `✅ \`${id}\` kullanıcısının banı kaldırıldı.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "unmute") {
     const m = i.options.getMember("uye");
-    if (!m?.moderatable) return i.reply({ content: "❌ Bu üyede işlem yapamıyorum.", flags: MessageFlags.Ephemeral });
+    if (!m?.moderatable) return i.editReply({ content: "❌ Bu üyede işlem yapamıyorum.", flags: MessageFlags.Ephemeral });
     await m.timeout(null, "KLOZN unmute");
-    return i.reply({ content: `🔊 ${m.user.tag} susturması kaldırıldı.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `🔊 ${m.user.tag} susturması kaldırıldı.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "uyar") {
     const m = i.options.getMember("uye");
     const reason = i.options.getString("sebep", true);
-    if (!m) return i.reply({ content: "❌ Üye bulunamadı.", flags: MessageFlags.Ephemeral });
+    if (!m) return i.editReply({ content: "❌ Üye bulunamadı.", flags: MessageFlags.Ephemeral });
     await log(g, "⚠️ Üye Uyarıldı", `**Üye:** ${m}\\n**Yetkili:** ${i.user}\\n**Sebep:** ${reason}`);
-    return i.reply({ content: `⚠️ ${m.user.tag} uyarıldı ve loglandı.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `⚠️ ${m.user.tag} uyarıldı ve loglandı.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "yavas-mod") {
-    if (!i.channel?.isTextBased() || !("setRateLimitPerUser" in i.channel)) return i.reply({ content: "❌ Bu kanalda kullanılamaz.", flags: MessageFlags.Ephemeral });
+    if (!i.channel?.isTextBased() || !("setRateLimitPerUser" in i.channel)) return i.editReply({ content: "❌ Bu kanalda kullanılamaz.", flags: MessageFlags.Ephemeral });
     const seconds = i.options.getInteger("saniye", true);
     await i.channel.setRateLimitPerUser(seconds, "KLOZN yavaş mod");
-    return i.reply({ content: seconds ? `🐢 Yavaş mod **${seconds} saniye** yapıldı.` : "🐇 Yavaş mod kapatıldı.", flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: seconds ? `🐢 Yavaş mod **${seconds} saniye** yapıldı.` : "🐇 Yavaş mod kapatıldı.", flags: MessageFlags.Ephemeral });
   }
 
   if (name === "kilitle" || name === "kilit-ac") {
-    if (!i.channel?.isTextBased()) return i.reply({ content: "❌ Bu kanalda kullanılamaz.", flags: MessageFlags.Ephemeral });
+    if (!i.channel?.isTextBased()) return i.editReply({ content: "❌ Bu kanalda kullanılamaz.", flags: MessageFlags.Ephemeral });
     const locked = name === "kilitle";
     await i.channel.permissionOverwrites.edit(g.roles.everyone, {
       SendMessages: locked ? false : null,
     }, { reason: `KLOZN ${name}` });
-    return i.reply({ content: locked ? "🔒 Kanal kilitlendi." : "🔓 Kanalın kilidi açıldı." });
+    return i.editReply({ content: locked ? "🔒 Kanal kilitlendi." : "🔓 Kanalın kilidi açıldı." });
   }
 
   if (name === "rol-al") {
     const m = i.options.getMember("uye"), which = i.options.getString("rol", true);
     const map = { yayinci: R.YAYINCI, icerik: R.ICERIK, vip: R.VIP, izleyici: R.IZLEYICI, kadin: R.KADIN };
     const r = role(g, map[which]);
-    if (!m || !r) return i.reply({ content: "❌ Üye veya rol bulunamadı.", flags: MessageFlags.Ephemeral });
+    if (!m || !r) return i.editReply({ content: "❌ Üye veya rol bulunamadı.", flags: MessageFlags.Ephemeral });
     await m.roles.remove(r);
-    return i.reply({ content: `🗑️ ${m} → **${r.name}** kaldırıldı.`, flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: `🗑️ ${m} → **${r.name}** kaldırıldı.`, flags: MessageFlags.Ephemeral });
   }
 
   if (name === "kullanici-bilgi") {
     const m = i.options.getMember("uye") || i.member;
     const roles = m.roles.cache.filter(r => r.id !== g.id).map(r => r.name).join(", ") || "Rol yok";
-    return i.reply({ embeds: [new EmbedBuilder()
+    return i.editReply({ embeds: [new EmbedBuilder()
       .setTitle(`👤 ${m.user.tag}`)
       .setThumbnail(m.user.displayAvatarURL({ size: 512 }))
       .addFields(
@@ -667,12 +672,12 @@ async function commandHandler(i) {
 
   if (name === "avatar") {
     const m = i.options.getMember("uye") || i.member;
-    return i.reply({ embeds: [new EmbedBuilder().setTitle(`🖼️ ${m.user.tag} Avatar`)
+    return i.editReply({ embeds: [new EmbedBuilder().setTitle(`🖼️ ${m.user.tag} Avatar`)
       .setImage(m.user.displayAvatarURL({ extension: "png", size: 1024 }))] });
   }
 
   if (name === "sunucu-bilgi") {
-    return i.reply({ embeds: [new EmbedBuilder().setTitle(`🏠 ${g.name}`)
+    return i.editReply({ embeds: [new EmbedBuilder().setTitle(`🏠 ${g.name}`)
       .setThumbnail(g.iconURL({ size: 512 }))
       .addFields(
         { name: "👥 Üye", value: String(g.memberCount), inline: true },
@@ -684,7 +689,7 @@ async function commandHandler(i) {
 
   if (name === "rol-bilgi") {
     const r = i.options.getRole("rol", true);
-    return i.reply({ embeds: [new EmbedBuilder().setTitle(`🎭 ${r.name}`)
+    return i.editReply({ embeds: [new EmbedBuilder().setTitle(`🎭 ${r.name}`)
       .addFields(
         { name: "🆔 ID", value: r.id, inline: true },
         { name: "👥 Üye", value: String(r.members.size), inline: true },
@@ -698,12 +703,12 @@ async function commandHandler(i) {
     const msg = await i.channel.send({ embeds: [new EmbedBuilder().setTitle("📊 ANKET").setDescription(`**${question}**\n\n👍 Evet\n👎 Hayır`).setFooter({ text: `Oluşturan: ${i.user.tag}` })] });
     await msg.react("👍");
     await msg.react("👎");
-    return i.reply({ content: "📊 Anket oluşturuldu.", flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: "📊 Anket oluşturuldu.", flags: MessageFlags.Ephemeral });
   }
 
   if (name === "ticket-kur") {
     const ch = channel(g, CH.TICKET);
-    if (!ch?.isTextBased()) return i.reply({ content: "❌ Ticket panel kanalı bulunamadı. Önce `/kurulum` çalıştır.", flags: MessageFlags.Ephemeral });
+    if (!ch?.isTextBased()) return i.editReply({ content: "❌ Ticket panel kanalı bulunamadı. Önce `/kurulum` çalıştır.", flags: MessageFlags.Ephemeral });
 
     const embed = new EmbedBuilder()
       .setTitle("🎫 KLOZN DESTEK MERKEZİ")
@@ -736,37 +741,37 @@ async function commandHandler(i) {
     ];
 
     await ch.send({ embeds: [embed], components: rows });
-    return i.reply({ content: "✅ Gelişmiş ticket paneli gönderildi.", flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: "✅ Gelişmiş ticket paneli gönderildi.", flags: MessageFlags.Ephemeral });
   }
 
   if (name === "ticket-kapat") {
-    if (!i.channel?.name.startsWith("ticket-")) return i.reply({ content: "❌ Bu komut sadece ticket kanalında kullanılabilir.", flags: MessageFlags.Ephemeral });
-    await i.reply({ content: "🔒 Ticket kapatılıyor..." });
+    if (!i.channel?.name.startsWith("ticket-")) return i.editReply({ content: "❌ Bu komut sadece ticket kanalında kullanılabilir.", flags: MessageFlags.Ephemeral });
+    await i.editReply({ content: "🔒 Ticket kapatılıyor..." });
     setTimeout(() => i.channel.delete("KLOZN ticket-kapat").catch(() => {}), 1200);
     return;
   }
 
   if (name === "ticket-ekle" || name === "ticket-cikar") {
-    if (!i.channel?.name.startsWith("ticket-")) return i.reply({ content: "❌ Bu komut sadece ticket kanalında kullanılabilir.", flags: MessageFlags.Ephemeral });
+    if (!i.channel?.name.startsWith("ticket-")) return i.editReply({ content: "❌ Bu komut sadece ticket kanalında kullanılabilir.", flags: MessageFlags.Ephemeral });
     const m = i.options.getMember("uye");
-    if (!m) return i.reply({ content: "❌ Üye bulunamadı.", flags: MessageFlags.Ephemeral });
+    if (!m) return i.editReply({ content: "❌ Üye bulunamadı.", flags: MessageFlags.Ephemeral });
     const allow = name === "ticket-ekle";
     await i.channel.permissionOverwrites.edit(m.id, { ViewChannel: allow, SendMessages: allow, ReadMessageHistory: allow });
-    return i.reply({ content: allow ? `➕ ${m} ticketa eklendi.` : `➖ ${m} tickettan çıkarıldı.` });
+    return i.editReply({ content: allow ? `➕ ${m} ticketa eklendi.` : `➖ ${m} tickettan çıkarıldı.` });
   }
 
   if (name === "ticket-devret") {
-    if (!i.channel?.name.startsWith("ticket-")) return i.reply({ content: "❌ Bu komut sadece ticket kanalında kullanılabilir.", flags: MessageFlags.Ephemeral });
+    if (!i.channel?.name.startsWith("ticket-")) return i.editReply({ content: "❌ Bu komut sadece ticket kanalında kullanılabilir.", flags: MessageFlags.Ephemeral });
     const m = i.options.getMember("uye");
-    if (!m) return i.reply({ content: "❌ Üye bulunamadı.", flags: MessageFlags.Ephemeral });
+    if (!m) return i.editReply({ content: "❌ Üye bulunamadı.", flags: MessageFlags.Ephemeral });
     await i.channel.permissionOverwrites.edit(m.id, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true });
-    return i.reply({ content: `🤝 Ticket ${m} kullanıcısına devredildi.` });
+    return i.editReply({ content: `🤝 Ticket ${m} kullanıcısına devredildi.` });
   }
 
   if (name === "ticket-bilgi") {
-    if (!i.channel?.name.startsWith("ticket-")) return i.reply({ content: "❌ Bu komut sadece ticket kanalında kullanılabilir.", flags: MessageFlags.Ephemeral });
+    if (!i.channel?.name.startsWith("ticket-")) return i.editReply({ content: "❌ Bu komut sadece ticket kanalında kullanılabilir.", flags: MessageFlags.Ephemeral });
     const overwrites = i.channel.permissionOverwrites.cache.filter(x => x.allow.has(PermissionFlagsBits.ViewChannel));
-    return i.reply({
+    return i.editReply({
       embeds: [new EmbedBuilder()
         .setTitle("🎫 Ticket Bilgileri")
         .addFields(
@@ -781,18 +786,21 @@ async function commandHandler(i) {
 
 
   if (name === "klip") {
-    if (!isCreator(i)) return i.reply({ content: "🔒 Bu komut yalnızca Yayıncı, İçerik Üreticisi veya Yönetim içindir.", flags: MessageFlags.Ephemeral });
+    if (!isCreator(i)) return i.editReply({ content: "🔒 Bu komut yalnızca Yayıncı, İçerik Üreticisi veya Yönetim içindir.", flags: MessageFlags.Ephemeral });
     const ch = channel(g, CH.CLIPS);
-    if (!ch?.isTextBased()) return i.reply({ content: "❌ Klip kanalı bulunamadı.", flags: MessageFlags.Ephemeral });
+    if (!ch?.isTextBased()) return i.editReply({ content: "❌ Klip kanalı bulunamadı.", flags: MessageFlags.Ephemeral });
     const link = i.options.getString("link", true), title = i.options.getString("baslik", true);
     await ch.send({ embeds: [new EmbedBuilder().setTitle(`🎬 ${title}`).setDescription(`🔗 [Klibi izle](${link})`).addFields({ name: "👤 Paylaşan", value: i.user.toString() }).setTimestamp()] });
-    return i.reply({ content: "🎬 Klip paylaşıldı.", flags: MessageFlags.Ephemeral });
+    return i.editReply({ content: "🎬 Klip paylaşıldı.", flags: MessageFlags.Ephemeral });
   }
 }
 
 client.on("interactionCreate", async i => {
   try {
-    if (i.isChatInputCommand()) return commandHandler(i);
+    if (i.isChatInputCommand()) {
+      await commandHandler(i);
+      return;
+    }
     if (!i.isButton()) return;
 
     if (i.customId === "klozn_register") {
@@ -882,8 +890,12 @@ client.on("interactionCreate", async i => {
     }
   } catch (e) {
     console.error("INTERACTION ERROR:", e);
-    const payload = { content: "❌ Komut işlenirken hata oluştu. Render loglarını kontrol et.", flags: MessageFlags.Ephemeral };
-    try { if (i.replied || i.deferred) await i.followUp(payload); else await i.reply(payload); } catch {}
+    const payload = { content: "❌ İşlem sırasında bir hata oluştu. Render loglarını kontrol et.", flags: MessageFlags.Ephemeral };
+    try {
+      if (i.deferred) await i.editReply(payload);
+      else if (i.replied) await i.followUp(payload);
+      else await i.reply(payload);
+    } catch {}
   }
 });
 
