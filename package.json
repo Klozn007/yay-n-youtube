@@ -1,15 +1,17 @@
 {
   "name": "klozn-discord-bot",
-  "version": "7.0.0",
-  "description": "KLOZN Creator Discord bot - Render/UptimeRobot optimized",
+  "version": "8.1.0",
+  "description": "KLOZN Creator Discord Bot - Render uyumlu",
+  "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "node index.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "discord.js": "^14.22.1"
+    "discord.js": "^14.25.1"
   }
 }
