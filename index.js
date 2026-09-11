@@ -38,7 +38,10 @@ const roleDefs = [
   ["💎", "Booster", 0xFF73FA],
   ["🏆", "VIP", 0xF1C40F],
   ["⭐", "Aktif Üye", 0xFEE75C],
-  ["👤", "Üye", 0x95A5A6]
+  ["👤", "Üye", 0x95A5A6],
+  ["🎬", "İçerik Ekibi", 0x00BFFF],
+  ["📣", "Duyuru Sorumlusu", 0xF39C12],
+  ["🎟️", "Ticket Yetkilisi", 0x1ABC9C]
 ];
 
 const categoryDefs = [
@@ -50,14 +53,16 @@ const categoryDefs = [
   ["💬 TOPLULUK", [
     ["💬・genel", "text"], ["🤖・bot-komutları", "text"],
     ["📸・medya", "text"], ["🎮・oyun", "text"],
-    ["💡・öneriler", "text"]
+    ["💡・öneriler", "text"], ["🧩・topluluk-etkinlikleri", "text"],
+    ["📣・duyuru-sohbet", "text"]
   ]],
   ["🔊 SES KANALLARI", [
     ["🔊 Genel Sohbet", "voice"], ["🎮 Oyun 1", "voice"],
     ["🎮 Oyun 2", "voice"], ["🔒 Yetkili Ses", "voice"]
   ]],
   ["🎫 DESTEK", [
-    ["🎫・ticket", "text"], ["📮・başvuru", "text"], ["🤝・destek", "text"]
+    ["🎫・ticket", "text"], ["📮・başvuru", "text"], ["🤝・destek", "text"],
+    ["🆘・yardım", "text"], ["📚・ticket-bilgi", "text"]
   ]],
   ["🏆 ETKİNLİK", [
     ["🎉・etkinlik", "text"], ["🏅・çekiliş", "text"],
@@ -336,23 +341,8 @@ async function register() {
 client.once(Events.ClientReady, async ready => {
   console.log(`✅ ${ready.user.tag} aktif.`);
   await register();
-client.once(Events.ClientReady, async clientReady => {
-  console.log(`✅ ${clientReady.user.tag} aktif.`);
-
-  await register();
-
-  clientReady.user.setPresence({
-    activities: [
-      {
-        name: `${clientReady.guilds.cache.size} sunucu | /setup`,
-        type: ActivityType.Watching
-      }
-    ],
-    status: "online"
-  });
-
-  console.log(`🌐 ${clientReady.guilds.cache.size} sunucuda aktif.`);
-});});
+  ready.user.setPresence({ activities: [{ name: `${ready.client.guilds.cache.size} sunucu | /setup`, type: ActivityType.Watching }], status: "online" });
+});
 
 client.on(Events.GuildMemberAdd, async m => {
   const cfg = guildData(m.guild.id);
@@ -1452,52 +1442,51 @@ function addTempAction(type, guildId, userId, expiresAt, reason) {
 /* ----------------------- PRIVATE WOMEN AREA SYNC ------------------------- */
 const WOMEN_ROLE_NAME = "👩 Kadın";
 const WOMEN_CATEGORY_NAME = "👩 KADINLARA ÖZEL";
-const WOMEN_CHANNEL_NAME = "👩・kadın-özel";
+const WOMEN_CHANNELS = {
+  sohbet: "👩・kadın-sohbet",
+  medya: "📸・kadın-medya",
+  etkinlik: "🌸・kadın-etkinlik",
+  bilgi: "📌・kadın-bilgi",
+  ses: "🔊・kadın-ses"
+};
 
+// Kadın alanı görünürdür: herkes kategori/kanal adını görebilir.
+// Kadın olmayan üyeler metin kanallarında yazamaz; kadın ses kanalına bağlanamaz.
+// Kadın rolü ve Administrator yetkili roller tam erişim alır.
 async function ensureWomenArea(guild) {
   if (!guild.members.me?.permissions.has(PermissionsBitField.Flags.Administrator)) {
     throw new Error("Botun Administrator yetkisi olmalı.");
   }
 
   const cfg = guildData(guild.id);
+
   let role = guild.roles.cache.find(r => r.name === WOMEN_ROLE_NAME && !r.managed);
   if (!role) {
     role = await guild.roles.create({
       name: WOMEN_ROLE_NAME,
       color: 0xFF69B4,
       mentionable: false,
-      hoist: false,
-      reason: "Kadınlara özel alan kurulumu"
+      hoist: true,
+      reason: "KLOZN kadın alanı kurulumu"
     });
   } else if (role.editable) {
-    await role.edit({ color: 0xFF69B4, mentionable: false, hoist: false }).catch(() => {});
+    await role.edit({ color: 0xFF69B4, mentionable: false, hoist: true }).catch(() => {});
   }
 
-  // Put the special role below the bot role so only admins/bot can manage it.
   const botHighest = guild.members.me.roles.highest;
   if (role.editable && botHighest && role.position >= botHighest.position) {
     await role.setPosition(Math.max(1, botHighest.position - 1)).catch(() => {});
-  }
-
-  let category = guild.channels.cache.find(
-    c => c.type === ChannelType.GuildCategory && c.name === WOMEN_CATEGORY_NAME
-  );
-  if (!category) {
-    category = await guild.channels.create({
-      name: WOMEN_CATEGORY_NAME,
-      type: ChannelType.GuildCategory,
-      reason: "Kadınlara özel alan kurulumu"
-    });
   }
 
   const adminRoleIds = guild.roles.cache
     .filter(r => !r.managed && r.permissions.has(PermissionsBitField.Flags.Administrator))
     .map(r => r.id);
 
-  const overwrites = [
+  const textOverwrites = [
     {
       id: guild.roles.everyone.id,
-      deny: [PermissionsBitField.Flags.ViewChannel]
+      allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.ReadMessageHistory],
+      deny: [PermissionsBitField.Flags.SendMessages]
     },
     {
       id: role.id,
@@ -1505,8 +1494,9 @@ async function ensureWomenArea(guild) {
         PermissionsBitField.Flags.ViewChannel,
         PermissionsBitField.Flags.SendMessages,
         PermissionsBitField.Flags.ReadMessageHistory,
-        PermissionsBitField.Flags.Connect,
-        PermissionsBitField.Flags.Speak
+        PermissionsBitField.Flags.AttachFiles,
+        PermissionsBitField.Flags.EmbedLinks,
+        PermissionsBitField.Flags.AddReactions
       ]
     },
     ...adminRoleIds.map(id => ({
@@ -1515,43 +1505,93 @@ async function ensureWomenArea(guild) {
         PermissionsBitField.Flags.ViewChannel,
         PermissionsBitField.Flags.SendMessages,
         PermissionsBitField.Flags.ReadMessageHistory,
-        PermissionsBitField.Flags.Connect,
-        PermissionsBitField.Flags.Speak
+        PermissionsBitField.Flags.ManageMessages,
+        PermissionsBitField.Flags.ManageChannels
       ]
     }))
   ];
 
-  await category.permissionOverwrites.set(overwrites).catch(() => {});
+  const voiceOverwrites = [
+    {
+      id: guild.roles.everyone.id,
+      allow: [PermissionsBitField.Flags.ViewChannel],
+      deny: [PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak]
+    },
+    {
+      id: role.id,
+      allow: [
+        PermissionsBitField.Flags.ViewChannel,
+        PermissionsBitField.Flags.Connect,
+        PermissionsBitField.Flags.Speak,
+        PermissionsBitField.Flags.Stream
+      ]
+    },
+    ...adminRoleIds.map(id => ({
+      id,
+      allow: [
+        PermissionsBitField.Flags.ViewChannel,
+        PermissionsBitField.Flags.Connect,
+        PermissionsBitField.Flags.Speak,
+        PermissionsBitField.Flags.Stream,
+        PermissionsBitField.Flags.ManageChannels
+      ]
+    }))
+  ];
 
-  let channel = guild.channels.cache.find(
-    c => c.type === ChannelType.GuildText && c.name === WOMEN_CHANNEL_NAME
+  let category = guild.channels.cache.find(
+    c => c.type === ChannelType.GuildCategory && c.name === WOMEN_CATEGORY_NAME
   );
-  if (!channel) {
-    channel = await guild.channels.create({
-      name: WOMEN_CHANNEL_NAME,
-      type: ChannelType.GuildText,
-      parent: category.id,
-      permissionOverwrites: overwrites,
-      reason: "Kadınlara özel kanal kurulumu"
+  if (!category) {
+    category = await guild.channels.create({
+      name: WOMEN_CATEGORY_NAME,
+      type: ChannelType.GuildCategory,
+      permissionOverwrites: textOverwrites,
+      reason: "KLOZN kadın alanı kurulumu"
     });
   } else {
-    if (channel.parentId !== category.id) await channel.setParent(category.id).catch(() => {});
-    await channel.permissionOverwrites.set(overwrites).catch(() => {});
+    await category.permissionOverwrites.set(textOverwrites).catch(() => {});
+  }
+
+  const created = {};
+  for (const [key, name] of Object.entries(WOMEN_CHANNELS)) {
+    const kind = key === "ses" ? ChannelType.GuildVoice : ChannelType.GuildText;
+    let ch = guild.channels.cache.find(c => c.type === kind && c.name === name);
+    const overwrites = kind === ChannelType.GuildVoice ? voiceOverwrites : textOverwrites;
+
+    if (!ch) {
+      ch = await guild.channels.create({
+        name,
+        type: kind,
+        parent: category.id,
+        permissionOverwrites: overwrites,
+        reason: "KLOZN kadın alanı kanal kurulumu"
+      });
+    } else {
+      if (ch.parentId !== category.id) await ch.setParent(category.id).catch(() => {});
+      await ch.permissionOverwrites.set(overwrites).catch(() => {});
+    }
+    created[key] = ch;
   }
 
   cfg.roles.women = role.id;
   cfg.channels.womenCategory = category.id;
-  cfg.channels.women = channel.id;
+  cfg.channels.women = created.sohbet.id;
+  cfg.channels.womenMedia = created.medya.id;
+  cfg.channels.womenEvents = created.etkinlik.id;
+  cfg.channels.womenInfo = created.bilgi.id;
+  cfg.channels.womenVoice = created.ses.id;
   cfg.womenArea = {
     roleId: role.id,
     categoryId: category.id,
-    channelId: channel.id,
+    channels: Object.fromEntries(Object.entries(created).map(([k, c]) => [k, c.id])),
+    visibility: "EVERYONE_CAN_SEE",
+    access: "WOMEN_ROLE_OR_ADMIN",
     updatedAt: Date.now()
   };
+
   save();
   ultraSave();
-
-  return { role, category, channel };
+  return { role, category, channel: created.sohbet, channels: created };
 }
 
 async function syncServerFromScratch(guild) {
@@ -1559,17 +1599,44 @@ async function syncServerFromScratch(guild) {
     throw new Error("Botun Administrator yetkisi olmalı.");
   }
 
-  // Non-destructive rebuild: existing content is preserved; managed structure and
-  // permissions are recreated/synchronized instead of deleting user channels/messages.
+  // GERÇEK SIFIRDAN KURULUM:
+  // Bu komut mevcut tüm sunucu kanallarını siler ve botun tanımlı yapısını
+  // yeniden oluşturur. Mesajlar/kanal içerikleri geri getirilemez.
+  // Silme işleminden önce yapılandırma yedeği alınır ve silinemeyen bir kanal
+  // varsa hiçbir kanala dokunulmadan işlem durdurulur.
+  const backupFile = saveGuildBackup(guild.id);
+  const channels = [...guild.channels.cache.values()];
+  const undeletable = channels.filter(ch => !ch.deletable);
+  if (undeletable.length) {
+    throw new Error(
+      `Silinemeyen kanal(lar) var: ${undeletable.map(ch => `#${ch.name}`).join(", ")}`
+    );
+  }
+
+  // Önce kategori olmayan kanalları, ardından kategorileri sil. Böylece
+  // çocuk kanalların kategori bağımlılığı sorun çıkarmaz.
+  const nonCategories = channels.filter(ch => ch.type !== ChannelType.GuildCategory);
+  const categories = channels.filter(ch => ch.type === ChannelType.GuildCategory);
+  for (const ch of nonCategories) {
+    await ch.delete("/sunucu-yenile: sunucu yapısı sıfırdan yeniden oluşturuluyor");
+  }
+  for (const ch of categories) {
+    await ch.delete("/sunucu-yenile: kategori yapısı yeniden oluşturuluyor");
+  }
+
+  // Roller korunur/eksikler oluşturulur; ardından tüm kanal yapısı sıfırdan
+  // kurulur ve izin matrisi yeniden uygulanır.
   await ultraFullSetup(guild);
   const women = await ensureWomenArea(guild);
 
   const cfg = guildData(guild.id);
   cfg.lastFullSyncAt = Date.now();
+  cfg.lastFullSyncMode = "DESTRUCTIVE_REBUILD";
+  cfg.lastBackupFile = backupFile;
   save();
   ultraSave();
 
-  return women;
+  return { women, deletedChannels: channels.length, backupFile };
 }
 
 async function processTempActions() {
@@ -2132,7 +2199,13 @@ const ultraCommands = [
 
   new SlashCommandBuilder()
     .setName("sunucu-yenile")
-    .setDescription("Mevcut rol, kanal ve izin yapısını silmeden baştan senkronize eder."),
+    .setDescription("TÜM mevcut kanalları silip sunucuyu sıfırdan yeniden kurar.")
+    .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
+    .addBooleanOption(o => o
+      .setName("onay")
+      .setDescription("Mevcut tüm kanalların silinip yeniden oluşturulmasını onayla.")
+      .setRequired(true)
+    ),
 
   new SlashCommandBuilder()
     .setName("kadin-rol")
@@ -2380,21 +2453,32 @@ client.on(Events.InteractionCreate, async interaction => {
         return interaction.reply({ content: "❌ Bu komut sadece Administrator yetkisi olanlar içindir.", ephemeral: true });
       }
 
+      const onay = interaction.options.getBoolean("onay");
+      if (onay !== true) {
+        return interaction.reply({
+          content: "⚠️ Bu komut mevcut TÜM kanalları siler. Devam etmek için `onay:true` seçmelisin.",
+          ephemeral: true
+        });
+      }
+
       await interaction.deferReply({ ephemeral: true });
-      const women = await syncServerFromScratch(guild);
+      const result = await syncServerFromScratch(guild);
+      const women = result.women;
       await ultraSendLog(
         guild,
         "SERVER_SYNC",
-        "🔄 Sunucu Yapısı Yenilendi",
-        `Yetkili: ${member}\nRoller, kanallar, güvenlik izinleri ve özel alanlar senkronize edildi.`
+        "🔄 Sunucu Sıfırdan Yeniden Kuruldu",
+        `Yetkili: ${member}\nSilinen kanal sayısı: ${result.deletedChannels}\nKadın özel alanı yeniden oluşturuldu.`
       );
       return interaction.editReply(
-        "✅ **Sunucu entegrasyonu yenilendi.**\n" +
-        "• Mevcut içerikler silinmedi\n" +
-        "• Roller ve kanal izinleri senkronize edildi\n" +
-        "• Güvenlik yapısı güncellendi\n" +
-        `• 👩 Kadın rolü: <@&${women.role.id}>\n` +
-        `• 👩 Özel kanal: <#${women.channel.id}>`
+        "✅ **Sunucu sıfırdan yeniden oluşturuldu.**\n" +
+        `🗑️ Silinen mevcut kanal sayısı: **${result.deletedChannels}**\n` +
+        "🎭 Roller korunarak/eksikler oluşturularak yeniden entegre edildi\n" +
+        "🔐 Kanal izinleri sıfırdan uygulandı\n" +
+        "🛡️ Güvenlik yapısı yeniden kuruldu\n" +
+        `👩 Kadın rolü: <@&${women.role.id}>\n` +
+        `👩 Kadın özel kanal: <#${women.channel.id}>\n\n` +
+        "⚠️ Eski kanal mesajları bu işlemle silinmiştir."
       );
     }
 
