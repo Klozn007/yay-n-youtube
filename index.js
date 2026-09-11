@@ -9,7 +9,6 @@ const fs = require("fs");
 
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
-const GUILD_ID = process.env.GUILD_ID;
 if (!TOKEN || !CLIENT_ID) throw new Error("TOKEN ve CLIENT_ID .env içinde olmalı.");
 
 const DB_FILE = "./database.json";
@@ -35,9 +34,6 @@ const roleDefs = [
   ["🔰", "Deneme Moderatör", 0x95A5A6],
   ["🎫", "Destek Sorumlusu", 0x2ECC71],
   ["🎉", "Etkinlik Sorumlusu", 0x9B59B6],
-  ["📡", "Yayıncı", 0x9146FF],
-  ["🎬", "İçerik Üreticisi", 0x00BFFF],
-  ["🌸", "Kadın", 0xFF69B4],
   ["🤖", "Bot", 0x5865F2],
   ["💎", "Booster", 0xFF73FA],
   ["🏆", "VIP", 0xF1C40F],
@@ -62,15 +58,6 @@ const categoryDefs = [
   ]],
   ["🎫 DESTEK", [
     ["🎫・ticket", "text"], ["📮・başvuru", "text"], ["🤝・destek", "text"]
-  ]],
-  ["📡 YAYINCI MERKEZİ", [
-    ["📡・yayıncı-sohbet", "text"], ["🔴・yayın-planı", "text"], ["🎥・yayın-duyuruları", "text"], ["🎙️ Yayın Odası", "voice"]
-  ]],
-  ["🎬 İÇERİK ÜRETİCİ MERKEZİ", [
-    ["🎬・içerik-sohbet", "text"], ["💡・içerik-fikirleri", "text"], ["📅・içerik-planı", "text"], ["🎞️ İçerik Odası", "voice"]
-  ]],
-  ["🌸 KADINLARA ÖZEL", [
-    ["🌸・kadın-sohbet", "text"], ["💬・kadın-destek", "text"], ["🔊 Kadınlar Odası", "voice"]
   ]],
   ["🏆 ETKİNLİK", [
     ["🎉・etkinlik", "text"], ["🏅・çekiliş", "text"],
@@ -105,10 +92,13 @@ function embed(title, description) {
 }
 function isAdmin(i) {
   return i.guild.ownerId === i.user.id ||
-    i.member.permissions.has(PermissionsBitField.Flags.Administrator);
+    i.member.permissions.has(PermissionsBitField.Flags.Administrator) ||
+    i.member.roles.cache.has(guildData(i.guild.id).roles.admin);
 }
 function isMod(i) {
-  return isAdmin(i);
+  return isAdmin(i) ||
+    i.member.permissions.has(PermissionsBitField.Flags.ModerateMembers) ||
+    i.member.roles.cache.has(guildData(i.guild.id).roles.mod);
 }
 function isSupport(i) {
   return isAdmin(i) || isMod(i) ||
@@ -135,65 +125,7 @@ function overwrites(guild, roles, type) {
     base.push({ id: roles.mod, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
     base.push({ id: roles.admin, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
   }
-  if (type === "publisher") {
-    base.push({ id: roles.publisher, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak] });
-    base.push({ id: roles.admin, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak] });
-  }
-  if (type === "creator") {
-    base.push({ id: roles.creator, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak] });
-    base.push({ id: roles.admin, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak] });
-  }
-  if (type === "women") {
-    base.push({ id: roles.women, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak] });
-    base.push({ id: roles.admin, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak] });
-  }
   return base;
-}
-
-// /sunucu-yenile gerçek sıfırlama yapar: mevcut guild kanallarını siler,
-// ardından şablonu sıfırdan kurar. @everyone ve Discord managed roller korunur.
-async function hardResetServer(guild) {
-  if (!guild.members.me?.permissions.has(PermissionsBitField.Flags.Administrator)) {
-    throw new Error("Botun Administrator yetkisi olmalı.");
-  }
-
-  await guild.channels.fetch();
-  const channels = [...guild.channels.cache.values()]
-    .filter(ch => !ch.isThread?.())
-    .sort((a, b) => {
-      const ac = a.type === ChannelType.GuildCategory ? 1 : 0;
-      const bc = b.type === ChannelType.GuildCategory ? 1 : 0;
-      return ac - bc;
-    });
-
-  let deletedChannels = 0;
-  const failedChannels = [];
-  for (const ch of channels) {
-    try {
-      await ch.delete("/sunucu-yenile: mevcut kanal yapısını tamamen sıfırla");
-      deletedChannels++;
-    } catch (err) {
-      failedChannels.push(`${ch.name} (${ch.id})`);
-      console.error(`[RESET CHANNEL] ${ch.name}`, err?.message || err);
-    }
-  }
-
-  const managedNames = new Set(roleDefs.map(([emoji, name]) => `${emoji} ${name}`));
-  const roles = [...guild.roles.cache.values()]
-    .filter(r => r.id !== guild.id && !r.managed && managedNames.has(r.name) && r.editable)
-    .sort((a, b) => b.position - a.position);
-
-  let deletedRoles = 0;
-  for (const role of roles) {
-    try {
-      await role.delete("/sunucu-yenile: bot şablon rollerini yeniden oluştur");
-      deletedRoles++;
-    } catch (err) {
-      console.error(`[RESET ROLE] ${role.name}`, err?.message || err);
-    }
-  }
-
-  return { deletedChannels, deletedRoles, failedChannels };
 }
 
 async function setup(guild) {
@@ -206,16 +138,7 @@ async function setup(guild) {
   // Rolleri oluştur ve hiyerarşiye göre sakla.
   for (const [emoji, name, color] of roleDefs) {
     let r = guild.roles.cache.find(x => x.name === `${emoji} ${name}`);
-    const adminRole = name === "Sunucu Sahibi" || name === "Yönetici";
-    if (!r) r = await guild.roles.create({
-      name: `${emoji} ${name}`,
-      color,
-      permissions: adminRole ? [PermissionsBitField.Flags.Administrator] : [],
-      reason: "Full server setup"
-    });
-    else if (adminRole && !r.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      await r.setPermissions([PermissionsBitField.Flags.Administrator], "Full server admin role sync").catch(() => {});
-    }
+    if (!r) r = await guild.roles.create({ name: `${emoji} ${name}`, color, reason: "Full server setup" });
     roles[name] = r.id;
   }
   cfg.roles = {
@@ -223,7 +146,6 @@ async function setup(guild) {
     headMod: roles["Baş Moderatör"], mod: roles["Moderatör"],
     trialMod: roles["Deneme Moderatör"], support: roles["Destek Sorumlusu"],
     event: roles["Etkinlik Sorumlusu"], bot: roles["Bot"],
-    publisher: roles["Yayıncı"], creator: roles["İçerik Üreticisi"], women: roles["Kadın"],
     booster: roles["Booster"], vip: roles["VIP"], active: roles["Aktif Üye"],
     member: roles["Üye"]
   };
@@ -259,13 +181,8 @@ async function setup(guild) {
     const cat = await getCat(catName);
     let type = "public";
     if (catName === "🔐 YÖNETİM") type = "mod";
-    if (catName === "📡 YAYINCI MERKEZİ") type = "publisher";
-    if (catName === "🎬 İÇERİK ÜRETİCİ MERKEZİ") type = "creator";
-    if (catName === "🌸 KADINLARA ÖZEL") type = "women";
     for (const [name, kind] of chans) {
-      const opts = ["mod", "publisher", "creator", "women"].includes(type)
-        ? { permissionOverwrites: overwrites(guild, cfg.roles, type) }
-        : {};
+      const opts = type === "mod" ? { permissionOverwrites: overwrites(guild, cfg.roles, "mod") } : {};
       const c = kind === "text" ? await getText(name, cat, opts) : await getVoice(name, cat, opts);
       channelMap[name] = c.id;
     }
@@ -317,8 +234,6 @@ async function setup(guild) {
 
 const commands = [
   new SlashCommandBuilder().setName("setup").setDescription("Tam kapsamlı sunucu yapısını kurar."),
-  new SlashCommandBuilder().setName("sunucu-yenile").setDescription("Mevcut kanalları ve bot şablon rollerini silip sunucuyu sıfırdan kurar.")
-    .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
   new SlashCommandBuilder().setName("panel").setDescription("Yönetim panelini gönderir."),
   new SlashCommandBuilder().setName("mesaj-gonder").setDescription("Bot hesabından mesaj gönderir.")
     .addChannelOption(o => o.setName("kanal").setDescription("Kanal").setRequired(true).addChannelTypes(ChannelType.GuildText))
@@ -415,17 +330,13 @@ commands.push(
 
 async function register() {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-  const route = GUILD_ID
-    ? Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID)
-    : Routes.applicationCommands(CLIENT_ID);
-  await rest.put(route, { body: commands.map(x => x.toJSON()) });
-  console.log(`✅ ${commands.length} temel slash komut ${GUILD_ID ? "sunucuya" : "globale"} kaydedildi.`);
+  await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands.map(x => x.toJSON()) });
 }
 
 client.once(Events.ClientReady, async ready => {
   console.log(`✅ ${ready.user.tag} aktif.`);
   await register();
-  ready.user.setPresence({ activities: [{ name: `${ready.client.guilds.cache.size} sunucu | /setup`, type: ActivityType.Watching }], status: "online" });
+  ready.user.setPresence({ activities: [{ name: `${ready.guilds.cache.size} sunucu | /setup`, type: ActivityType.Watching }], status: "online" });
 });
 
 client.on(Events.GuildMemberAdd, async m => {
@@ -539,55 +450,6 @@ client.on(Events.InteractionCreate, async i => {
     if (c === "setup") {
       if (!i.guild || !isAdmin(i)) return i.reply({ content: "❌ Sadece sunucu sahibi/yönetici.", ephemeral: true });
       await i.deferReply({ ephemeral: true }); await setup(i.guild); return i.editReply("✅ Kapsamlı sunucu yapısı kuruldu/güncellendi.");
-    }
-
-    if (c === "sunucu-yenile") {
-      if (!i.guild || !isAdmin(i)) {
-        return i.reply({ content: "🔒 Bu komut sadece Yönetici yetkisine sahip kişiler içindir.", ephemeral: true });
-      }
-
-      await i.deferReply({ ephemeral: true });
-
-      try {
-        // ÖNEMLİ: Eski yapının üzerine yazma. Önce mevcut kanalları gerçekten sil,
-        // sonra roller + kategoriler + kanalları sıfırdan kur.
-        const reset = await hardResetServer(i.guild);
-        await setup(i.guild);
-
-        // Gelişmiş güvenlik rollerini ve izin matrisini de senkronize et.
-        await ultraBuildSecurityRoles(i.guild);
-        await ultraSetupPermissionMatrix(i.guild);
-
-        const cfg = ultraGuild(i.guild.id);
-        cfg.version = ULTRA_VERSION;
-        ultraSave();
-
-        v43WriteAudit(i.guild, i.user.id, "SERVER_RESYNC", null);
-        await ultraSendLog(
-          i.guild,
-          "SERVER_RESYNC",
-          "🔄 Sunucu Senkronizasyonu",
-          `Yetkili: ${i.user}\nRol, kanal ve izin yapısı yeniden senkronize edildi.`
-        );
-
-        return i.editReply(
-          "✅ **Sunucu tamamen sıfırdan yeniden kuruldu.**\n\n" +
-          `🗑️ Silinen kanallar: **${reset.deletedChannels}**\n` +
-          `🗑️ Silinen şablon roller: **${reset.deletedRoles}**\n` +
-          `⚠️ Silinemeyen kanal: **${reset.failedChannels.length}**\n` +
-          "🎭 Roller yeniden oluşturuldu\n" +
-          "📁 Kategoriler ve kanallar sıfırdan oluşturuldu\n" +
-          "📡 Yayıncı merkezi entegre edildi\n" +
-          "🎬 İçerik üretici merkezi entegre edildi\n" +
-          "🌸 Kadınlara özel alanlar entegre edildi\n" +
-          "🔐 Kanal izinleri güncellendi\n" +
-          "🛡️ Güvenlik rolleri senkronize edildi\n" +
-          "📋 İşlem audit kaydına yazıldı."
-        );
-      } catch (err) {
-        console.error("[SUNUCU YENILE]", err);
-        return i.editReply("❌ Sunucu yenilenirken hata oluştu. Botun **Administrator** yetkisini ve rol hiyerarşisini kontrol et.");
-      }
     }
 
     if (c === "panel") {
@@ -2282,6 +2144,10 @@ async function registerUltraCommands() {
   try {
     const rest = new REST({ version: "10" }).setToken(TOKEN);
 
+    const existing = await rest.get(
+      Routes.applicationCommands(CLIENT_ID)
+    ).catch(() => []);
+
     const merged = [
       ...commands.map(c => c.toJSON()),
       ...ultraCommands.map(c => c.toJSON())
@@ -2297,13 +2163,12 @@ async function registerUltraCommands() {
       unique.push(command);
     }
 
-    const route = GUILD_ID
-      ? Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID)
-      : Routes.applicationCommands(CLIENT_ID);
+    await rest.put(
+      Routes.applicationCommands(CLIENT_ID),
+      { body: unique }
+    );
 
-    await rest.put(route, { body: unique });
-
-    console.log(`✅ ${unique.length} benzersiz slash komut ${GUILD_ID ? `sunucu ${GUILD_ID}` : "global"} olarak kayıt edildi.`);
+    console.log(`✅ ${unique.length} slash komut kayıt edildi.`);
   } catch (e) {
     console.error("[ULTRA REGISTER]", e);
   }
