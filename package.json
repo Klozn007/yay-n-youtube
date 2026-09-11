@@ -1,7 +1,7 @@
 {
   "name": "klozn-discord-bot",
-  "version": "9.0.0",
-  "description": "KLOZN Creator Discord Bot - tam sunucu şablonu",
+  "version": "10.0.0",
+  "description": "KLOZN Creator Discord Bot - rol bazlı kanal ve tam sunucu yenileme sistemi",
   "private": true,
   "main": "index.js",
   "scripts": {

@@ -8,23 +8,24 @@ const {
   ButtonBuilder,
   ButtonStyle,
   REST,
-  Routes
-} = require("discord.js");
-const http = require("http");
-const https = require("https");
+  Routes,
+  ActivityType
+} = require('discord.js');
+const http = require('http');
+const https = require('https');
 
 const CONFIG = {
   TOKEN: process.env.TOKEN,
   CLIENT_ID: process.env.CLIENT_ID,
   GUILD_ID: process.env.GUILD_ID,
   PORT: Number(process.env.PORT || 10000),
-  YOUTUBE_CHANNEL_ID: process.env.YOUTUBE_CHANNEL_ID || "",
-  YOUTUBE_RSS: String(process.env.YOUTUBE_RSS || "false").toLowerCase() === "true",
-  AUTOMOD: String(process.env.AUTOMOD || "true").toLowerCase() !== "false"
+  YOUTUBE_CHANNEL_ID: process.env.YOUTUBE_CHANNEL_ID || '',
+  YOUTUBE_RSS: String(process.env.YOUTUBE_RSS || 'false').toLowerCase() === 'true',
+  AUTOMOD: String(process.env.AUTOMOD || 'true').toLowerCase() !== 'false'
 };
 
 if (!CONFIG.TOKEN || !CONFIG.CLIENT_ID || !CONFIG.GUILD_ID) {
-  throw new Error("TOKEN, CLIENT_ID ve GUILD_ID Environment Variables içinde olmalı.");
+  throw new Error('TOKEN, CLIENT_ID ve GUILD_ID Environment Variables içinde olmalı.');
 }
 
 const client = new Client({
@@ -37,88 +38,93 @@ const client = new Client({
 });
 
 const ROLE_NAMES = {
-  KLOZN: "KLOZN",
-  YONETIM: "Yönetim",
-  MOD: "Moderatör",
-  YAYINCI: "🎥 Yayıncı",
-  ICERIK: "🎬 İçerik Üreticisi",
-  VIP: "⭐ VIP İzleyici",
-  IZLEYICI: "👤 İzleyici",
-  KAYITSIZ: "📝 Kayıtsız",
-  BOT: "🤖 Bot",
-  KADIN: "🌸 Kadın"
-};
-
-const CATEGORY_NAMES = {
-  WELCOME: "👋・BAŞLANGIÇ",
-  GENERAL: "💬・TOPLULUK",
-  STREAM: "🔴・YAYIN MERKEZİ",
-  CONTENT: "🎬・İÇERİK MERKEZİ",
-  CREATOR: "✨・ÜRETİCİ ALANI",
-  COMMUNITY: "🎮・OYUN & ETKİNLİK",
-  SUPPORT: "🎫・DESTEK",
-  STAFF: "🛡️・YÖNETİM",
-  LOGS: "🔐・LOGLAR",
-  VOICE: "🔊・SES ODALARI",
-  WOMEN: "🌸・KADINLARA ÖZEL"
-};
-
-const CHANNEL_NAMES = {
-  REGISTER: "📝・kayıt-ol",
-  RULES: "📜・kurallar",
-  WELCOME: "👋・hos-geldin",
-  CHAT: "💬・sohbet",
-  MEDIA: "🖼️・medya",
-  BOT: "🤖・bot-komutları",
-  LIVE: "🔴・canlı-yayın",
-  LIVE_CHAT: "💬・yayın-sohbet",
-  CLIPS: "✂️・klipler",
-  VIDEOS: "▶️・videolar",
-  STREAMERS: "🎥・yayıncı-odası",
-  STREAM_CHAT: "🎙️・yayıncı-sohbet",
-  CONTENT_ROOM: "🎬・icerik-üretici-odası",
-  CONTENT_CHAT: "💡・icerik-fikirleri",
-  GAME: "🎮・oyun-sohbet",
-  LOOKING: "🔎・oyuncu-ara",
-  EVENTS: "🎉・etkinlikler",
-  GIVEAWAY: "🎁・çekilişler",
-  SUGGESTION: "💡・öneriler",
-  TICKET: "🎫・destek",
-  STAFF_CHAT: "🛡️・yönetim-sohbet",
-  MOD_CHAT: "🔨・moderasyon",
-  APPLICATIONS: "📋・başvurular",
-  SERVER_LOG: "📜・sunucu-log",
-  MOD_LOG: "🔨・moderasyon-log",
-  MEMBER_LOG: "👥・üye-log",
-  COMMAND_LOG: "🤖・komut-log",
-  MESSAGE_LOG: "💬・mesaj-log",
-  VOICE_LOG: "🔊・ses-log",
-  GENERAL_VOICE: "💬・Genel Sohbet",
-  GAMING_VOICE: "🎮・Oyun Odası",
-  STREAM_VOICE: "🔴・Yayın Odası",
-  STAFF_VOICE: "🛡️・Yönetim Odası",
-  WOMEN_CHAT: "🌸・kadın-sohbet",
-  WOMEN_VOICE: "🌸・Kadınlar Odası"
+  KLOZN: 'KLOZN',
+  YONETIM: '👑 Yönetim',
+  MOD: '🛡️ Moderatör',
+  YAYINCI: '🎥 Yayıncı',
+  ICERIK: '🎬 İçerik Üreticisi',
+  VIP: '⭐ VIP İzleyici',
+  IZLEYICI: '👤 İzleyici',
+  KAYITSIZ: '📝 Kayıtsız',
+  BOT: '🤖 Bot',
+  KADIN: '🌸 Kadın'
 };
 
 const COLORS = {
   KLOZN: 0x8b0000,
-  YONETIM: 0xff0000,
-  MOD: 0x00ff7f,
+  YONETIM: 0xe74c3c,
+  MOD: 0x3498db,
   YAYINCI: 0x9146ff,
   ICERIK: 0x00bfff,
-  VIP: 0xffd700,
+  VIP: 0xf1c40f,
   IZLEYICI: 0x5865f2,
-  KAYITSIZ: 0x808080,
-  BOT: 0x5865f2,
+  KAYITSIZ: 0x7f8c8d,
+  BOT: 0x2f3136,
   KADIN: 0xff69b4
 };
 
+const CATEGORIES = {
+  WELCOME: '👋・BAŞLANGIÇ',
+  COMMUNITY: '💬・TOPLULUK',
+  STREAM: '🔴・YAYIN MERKEZİ',
+  CONTENT: '🎬・İÇERİK MERKEZİ',
+  CREATOR: '✨・ÜRETİCİ ALANI',
+  GAMING: '🎮・OYUN & ETKİNLİK',
+  SUPPORT: '🎫・DESTEK',
+  STAFF: '🛡️・YÖNETİM',
+  LOGS: '🔐・LOGLAR',
+  VOICE: '🔊・SES ODALARI',
+  WOMEN: '🌸・KADINLARA ÖZEL'
+};
+
+const CHANNELS = {
+  REGISTER: '📝・kayıt-ol',
+  RULES: '📜・kurallar',
+  WELCOME: '👋・hos-geldin',
+  CHAT: '💬・sohbet',
+  MEDIA: '🖼️・medya',
+  BOT: '🤖・bot-komutları',
+  LIVE: '🔴・canlı-yayın',
+  LIVE_CHAT: '💬・yayın-sohbet',
+  CLIPS: '✂️・klipler',
+  VIDEOS: '▶️・videolar',
+  STREAMERS: '🎥・yayıncı-merkezi',
+  STREAM_CHAT: '🎙️・yayıncı-sohbet',
+  CONTENT_ROOM: '🎬・içerik-üretici-merkezi',
+  CONTENT_CHAT: '💡・içerik-fikirleri',
+  GAME: '🎮・oyun-sohbet',
+  LOOKING: '🔎・oyuncu-ara',
+  EVENTS: '🎉・etkinlikler',
+  GIVEAWAY: '🎁・çekilişler',
+  SUGGESTION: '💡・öneriler',
+  TICKET: '🎫・destek-talebi',
+  STAFF_CHAT: '👑・yönetim-sohbet',
+  MOD_CHAT: '🛡️・moderasyon',
+  APPLICATIONS: '📋・başvurular',
+  SERVER_LOG: '📜・sunucu-log',
+  MOD_LOG: '🛡️・moderasyon-log',
+  MEMBER_LOG: '👥・üye-log',
+  COMMAND_LOG: '🤖・komut-log',
+  MESSAGE_LOG: '💬・mesaj-log',
+  VOICE_LOG: '🔊・ses-log',
+  GENERAL_VOICE: '💬・Genel Sohbet',
+  GAMING_VOICE: '🎮・Oyun Odası',
+  STREAM_VOICE: '🔴・Yayın Odası',
+  STAFF_VOICE: '🛡️・Yönetim Odası',
+  WOMEN_CHAT: '🌸・kadın-sohbet',
+  WOMEN_VOICE: '🌸・Kadınlar Odası'
+};
+
+function embed(title, description) {
+  return new EmbedBuilder()
+    .setTitle(title)
+    .setDescription(description)
+    .setTimestamp()
+    .setFooter({ text: 'KLOZN Creator • Sunucu Sistemi' });
+}
+
 function isAdmin(interaction) {
-  return Boolean(
-    interaction.guild &&
-    interaction.member?.permissions?.has(PermissionFlagsBits.Administrator)
-  );
+  return Boolean(interaction.guild && interaction.member?.permissions?.has(PermissionFlagsBits.Administrator));
 }
 
 function findRole(guild, name) {
@@ -126,15 +132,17 @@ function findRole(guild, name) {
 }
 
 function findCategory(guild, name) {
-  return guild.channels.cache.find(
-    c => c.type === ChannelType.GuildCategory && c.name === name
-  );
+  return guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name === name);
 }
 
 function findChannel(guild, name, parentId = null) {
-  return guild.channels.cache.find(c =>
-    c.name === name && (parentId === null || c.parentId === parentId)
-  );
+  return guild.channels.cache.find(c => c.name === name && (parentId === null || c.parentId === parentId));
+}
+
+async function fetchGuildState(guild) {
+  await guild.roles.fetch();
+  await guild.channels.fetch();
+  if (guild.members.me) await guild.members.me.fetch();
 }
 
 async function ensureRole(guild, name, color, permissions = []) {
@@ -145,111 +153,152 @@ async function ensureRole(guild, name, color, permissions = []) {
       color,
       permissions,
       hoist: true,
-      reason: "KLOZN Creator template"
+      mentionable: false,
+      reason: 'KLOZN Creator şablon rolü'
     });
   } else {
-    try {
-      await role.setColor(color, "KLOZN template sync");
-      await role.setHoist(true, "KLOZN template sync");
-      if (name === ROLE_NAMES.KLOZN || name === ROLE_NAMES.YONETIM) {
-        await role.setPermissions([PermissionFlagsBits.Administrator], "KLOZN admin role sync");
-      }
-    } catch (err) {
-      console.warn(`Rol güncellenemedi: ${name}: ${err.message}`);
+    await role.edit({ color, hoist: true }, 'KLOZN rol senkronizasyonu').catch(() => {});
+    if (permissions.length && (name === ROLE_NAMES.KLOZN || name === ROLE_NAMES.YONETIM || name === ROLE_NAMES.MOD)) {
+      await role.setPermissions(permissions, 'KLOZN rol izin senkronizasyonu').catch(() => {});
     }
   }
   return role;
 }
 
 async function createRoles(guild) {
-  return {
-    KLOZN: await ensureRole(guild, ROLE_NAMES.KLOZN, COLORS.KLOZN, [PermissionFlagsBits.Administrator]),
-    YONETIM: await ensureRole(guild, ROLE_NAMES.YONETIM, COLORS.YONETIM, [PermissionFlagsBits.Administrator]),
-    MOD: await ensureRole(guild, ROLE_NAMES.MOD, COLORS.MOD, [
-      PermissionFlagsBits.ManageMessages,
-      PermissionFlagsBits.ModerateMembers
-    ]),
-    YAYINCI: await ensureRole(guild, ROLE_NAMES.YAYINCI, COLORS.YAYINCI),
-    ICERIK: await ensureRole(guild, ROLE_NAMES.ICERIK, COLORS.ICERIK),
-    VIP: await ensureRole(guild, ROLE_NAMES.VIP, COLORS.VIP),
-    IZLEYICI: await ensureRole(guild, ROLE_NAMES.IZLEYICI, COLORS.IZLEYICI),
-    KAYITSIZ: await ensureRole(guild, ROLE_NAMES.KAYITSIZ, COLORS.KAYITSIZ),
-    BOT: await ensureRole(guild, ROLE_NAMES.BOT, COLORS.BOT),
-    KADIN: await ensureRole(guild, ROLE_NAMES.KADIN, COLORS.KADIN)
-  };
+  const roles = {};
+  roles.KLOZN = await ensureRole(guild, ROLE_NAMES.KLOZN, COLORS.KLOZN, [PermissionFlagsBits.Administrator]);
+  roles.YONETIM = await ensureRole(guild, ROLE_NAMES.YONETIM, COLORS.YONETIM, [PermissionFlagsBits.Administrator]);
+  roles.MOD = await ensureRole(guild, ROLE_NAMES.MOD, COLORS.MOD, [
+    PermissionFlagsBits.ManageMessages,
+    PermissionFlagsBits.ModerateMembers,
+    PermissionFlagsBits.KickMembers,
+    PermissionFlagsBits.BanMembers
+  ]);
+  roles.YAYINCI = await ensureRole(guild, ROLE_NAMES.YAYINCI, COLORS.YAYINCI);
+  roles.ICERIK = await ensureRole(guild, ROLE_NAMES.ICERIK, COLORS.ICERIK);
+  roles.VIP = await ensureRole(guild, ROLE_NAMES.VIP, COLORS.VIP);
+  roles.IZLEYICI = await ensureRole(guild, ROLE_NAMES.IZLEYICI, COLORS.IZLEYICI);
+  roles.KAYITSIZ = await ensureRole(guild, ROLE_NAMES.KAYITSIZ, COLORS.KAYITSIZ);
+  roles.BOT = await ensureRole(guild, ROLE_NAMES.BOT, COLORS.BOT);
+  roles.KADIN = await ensureRole(guild, ROLE_NAMES.KADIN, COLORS.KADIN);
+  return roles;
 }
 
-const textAllow = [
+const TEXT_ALLOW = [
   PermissionFlagsBits.ViewChannel,
   PermissionFlagsBits.SendMessages,
   PermissionFlagsBits.ReadMessageHistory
 ];
 
-function overwritesForEveryone(guild, roles) {
+const VOICE_ALLOW = [
+  PermissionFlagsBits.ViewChannel,
+  PermissionFlagsBits.Connect,
+  PermissionFlagsBits.Speak
+];
+
+function everyoneDeny() {
+  return [{ id: 'EVERYONE', deny: [PermissionFlagsBits.ViewChannel] }];
+}
+
+function publicOverwrites(guild, roles) {
   return [
-    { id: guild.roles.everyone.id, allow: textAllow },
-    ...[
-      roles.KLOZN, roles.YONETIM, roles.MOD, roles.YAYINCI,
-      roles.ICERIK, roles.VIP, roles.IZLEYICI
-    ].map(role => ({ id: role.id, allow: textAllow }))
+    { id: guild.roles.everyone.id, allow: TEXT_ALLOW },
+    { id: roles.IZLEYICI.id, allow: TEXT_ALLOW },
+    { id: roles.VIP.id, allow: TEXT_ALLOW },
+    { id: roles.YAYINCI.id, allow: TEXT_ALLOW },
+    { id: roles.ICERIK.id, allow: TEXT_ALLOW },
+    { id: roles.KADIN.id, allow: TEXT_ALLOW },
+    { id: roles.MOD.id, allow: TEXT_ALLOW },
+    { id: roles.YONETIM.id, allow: TEXT_ALLOW },
+    { id: roles.KLOZN.id, allow: TEXT_ALLOW }
+  ];
+}
+
+function registeredOnly(guild, roles) {
+  return [
+    { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+    { id: roles.IZLEYICI.id, allow: TEXT_ALLOW },
+    { id: roles.VIP.id, allow: TEXT_ALLOW },
+    { id: roles.YAYINCI.id, allow: TEXT_ALLOW },
+    { id: roles.ICERIK.id, allow: TEXT_ALLOW },
+    { id: roles.KADIN.id, allow: TEXT_ALLOW },
+    { id: roles.MOD.id, allow: TEXT_ALLOW },
+    { id: roles.YONETIM.id, allow: TEXT_ALLOW },
+    { id: roles.KLOZN.id, allow: TEXT_ALLOW }
   ];
 }
 
 function registrationOverwrites(guild, roles) {
   return [
-    {
-      id: guild.roles.everyone.id,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory]
-    },
-    { id: roles.KLOZN.id, allow: textAllow },
-    { id: roles.YONETIM.id, allow: textAllow },
-    { id: roles.KAYITSIZ.id, allow: textAllow }
+    { id: guild.roles.everyone.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory] },
+    { id: roles.KAYITSIZ.id, allow: TEXT_ALLOW },
+    { id: roles.IZLEYICI.id, allow: TEXT_ALLOW },
+    { id: roles.VIP.id, allow: TEXT_ALLOW },
+    { id: roles.YAYINCI.id, allow: TEXT_ALLOW },
+    { id: roles.ICERIK.id, allow: TEXT_ALLOW },
+    { id: roles.KADIN.id, allow: TEXT_ALLOW },
+    { id: roles.MOD.id, allow: TEXT_ALLOW },
+    { id: roles.YONETIM.id, allow: TEXT_ALLOW },
+    { id: roles.KLOZN.id, allow: TEXT_ALLOW }
   ];
 }
 
-function adminOnlyOverwrites(guild, roles) {
+function readOnlyEveryone(guild, roles) {
+  return [
+    { id: guild.roles.everyone.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+    { id: roles.KAYITSIZ.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+    { id: roles.IZLEYICI.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+    { id: roles.VIP.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+    { id: roles.YAYINCI.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+    { id: roles.ICERIK.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+    { id: roles.KADIN.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+    { id: roles.MOD.id, allow: TEXT_ALLOW },
+    { id: roles.YONETIM.id, allow: TEXT_ALLOW },
+    { id: roles.KLOZN.id, allow: TEXT_ALLOW }
+  ];
+}
+
+function roleOnly(guild, roleList) {
   return [
     { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-    { id: roles.KLOZN.id, allow: textAllow },
-    { id: roles.YONETIM.id, allow: textAllow }
+    ...roleList.map(r => ({ id: r.id, allow: TEXT_ALLOW }))
   ];
 }
 
-function staffOverwrites(guild, roles) {
-  return [
-    { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-    { id: roles.KLOZN.id, allow: textAllow },
-    { id: roles.YONETIM.id, allow: textAllow },
-    { id: roles.MOD.id, allow: textAllow }
-  ];
+function staffOnly(guild, roles) {
+  return roleOnly(guild, [roles.MOD, roles.YONETIM, roles.KLOZN]);
 }
 
-function creatorOverwrites(guild, roles) {
-  return [
-    { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-    { id: roles.KLOZN.id, allow: textAllow },
-    { id: roles.YONETIM.id, allow: textAllow },
-    { id: roles.YAYINCI.id, allow: textAllow },
-    { id: roles.ICERIK.id, allow: textAllow }
-  ];
+function adminOnly(guild, roles) {
+  return roleOnly(guild, [roles.YONETIM, roles.KLOZN]);
 }
 
-function womenOverwrites(guild, roles) {
-  const allow = [
-    PermissionFlagsBits.ViewChannel,
-    PermissionFlagsBits.SendMessages,
-    PermissionFlagsBits.ReadMessageHistory,
-    PermissionFlagsBits.Connect,
-    PermissionFlagsBits.Speak
-  ];
+function creatorOnly(guild, roles) {
+  return roleOnly(guild, [roles.YAYINCI, roles.ICERIK, roles.YONETIM, roles.KLOZN]);
+}
+
+function publisherOnly(guild, roles) {
+  return roleOnly(guild, [roles.YAYINCI, roles.YONETIM, roles.KLOZN]);
+}
+
+function contentOnly(guild, roles) {
+  return roleOnly(guild, [roles.ICERIK, roles.YONETIM, roles.KLOZN]);
+}
+
+function womenOnly(guild, roles) {
+  // Kanal adı herkes tarafından görülebilir; içerik ve ses bağlantısı sadece Kadın/Yönetim/KLOZN'a açıktır.
   return [
-    {
-      id: guild.roles.everyone.id,
-      deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]
-    },
-    { id: roles.KADIN.id, allow },
-    { id: roles.KLOZN.id, allow },
-    { id: roles.YONETIM.id, allow }
+    { id: guild.roles.everyone.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+    { id: roles.KAYITSIZ.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+    { id: roles.IZLEYICI.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+    { id: roles.VIP.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+    { id: roles.YAYINCI.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+    { id: roles.ICERIK.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+    { id: roles.MOD.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak] },
+    { id: roles.KADIN.id, allow: [...TEXT_ALLOW, ...VOICE_ALLOW] },
+    { id: roles.YONETIM.id, allow: [...TEXT_ALLOW, ...VOICE_ALLOW] },
+    { id: roles.KLOZN.id, allow: [...TEXT_ALLOW, ...VOICE_ALLOW] }
   ];
 }
 
@@ -258,18 +307,18 @@ async function createCategory(guild, name, overwrites) {
     name,
     type: ChannelType.GuildCategory,
     permissionOverwrites: overwrites,
-    reason: "KLOZN Creator template"
+    reason: 'KLOZN Creator şablonu'
   });
 }
 
-async function createText(guild, name, parent, overwrites, topic = "") {
+async function createText(guild, name, parent, overwrites, topic = '') {
   return guild.channels.create({
     name,
     type: ChannelType.GuildText,
     parent: parent.id,
     topic,
     permissionOverwrites: overwrites,
-    reason: "KLOZN Creator template"
+    reason: 'KLOZN Creator şablonu'
   });
 }
 
@@ -279,124 +328,116 @@ async function createVoice(guild, name, parent, overwrites) {
     type: ChannelType.GuildVoice,
     parent: parent.id,
     permissionOverwrites: overwrites,
-    reason: "KLOZN Creator template"
+    reason: 'KLOZN Creator şablonu'
   });
 }
 
 async function setupServer(guild) {
+  await fetchGuildState(guild);
   const roles = await createRoles(guild);
-  const normal = overwritesForEveryone(guild, roles);
-  const register = registrationOverwrites(guild, roles);
-  const admin = adminOnlyOverwrites(guild, roles);
-  const staff = staffOverwrites(guild, roles);
-  const creator = creatorOverwrites(guild, roles);
-  const women = womenOverwrites(guild, roles);
 
-  const welcome = await createCategory(guild, CATEGORY_NAMES.WELCOME, register);
-  const registerChannel = await createText(guild, CHANNEL_NAMES.REGISTER, welcome, register, "Sunucuya kayıt olmak için butonu kullan.");
-  await createText(guild, CHANNEL_NAMES.RULES, welcome, register, "Sunucu kuralları.");
-  await createText(guild, CHANNEL_NAMES.WELCOME, welcome, register, "Yeni üyeler burada karşılanır.");
+  // Kayıtsız sadece başlangıç alanını görebilir.
+  const welcome = await createCategory(guild, CATEGORIES.WELCOME, registrationOverwrites(guild, roles));
+  const register = await createText(guild, CHANNELS.REGISTER, welcome, registrationOverwrites(guild, roles), 'Kayıt olmak için butona bas.');
+  await createText(guild, CHANNELS.RULES, welcome, readOnlyEveryone(guild, roles), 'Sunucu kuralları.');
+  await createText(guild, CHANNELS.WELCOME, welcome, readOnlyEveryone(guild, roles), 'Yeni üyeler burada karşılanır.');
 
-  const general = await createCategory(guild, CATEGORY_NAMES.GENERAL, normal);
-  await createText(guild, CHANNEL_NAMES.CHAT, general, normal);
-  await createText(guild, CHANNEL_NAMES.MEDIA, general, normal);
-  await createText(guild, CHANNEL_NAMES.BOT, general, normal);
+  const community = await createCategory(guild, CATEGORIES.COMMUNITY, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.CHAT, community, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.MEDIA, community, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.BOT, community, registeredOnly(guild, roles));
 
-  const stream = await createCategory(guild, CATEGORY_NAMES.STREAM, normal);
-  await createText(guild, CHANNEL_NAMES.LIVE, stream, normal, "Canlı yayın bildirimleri.");
-  await createText(guild, CHANNEL_NAMES.LIVE_CHAT, stream, normal);
-  await createText(guild, CHANNEL_NAMES.CLIPS, stream, normal);
+  const stream = await createCategory(guild, CATEGORIES.STREAM, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.LIVE, stream, readOnlyEveryone(guild, roles), 'Yayın bildirimleri.');
+  await createText(guild, CHANNELS.LIVE_CHAT, stream, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.CLIPS, stream, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.STREAMERS, stream, publisherOnly(guild, roles));
 
-  const content = await createCategory(guild, CATEGORY_NAMES.CONTENT, normal);
-  await createText(guild, CHANNEL_NAMES.VIDEOS, content, normal, "Yeni videolar.");
-  await createText(guild, CHANNEL_NAMES.SUGGESTION, content, normal);
-  await createText(guild, CHANNEL_NAMES.MEDIA, content, normal);
+  const content = await createCategory(guild, CATEGORIES.CONTENT, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.VIDEOS, content, readOnlyEveryone(guild, roles), 'Yeni videolar.');
+  await createText(guild, CHANNELS.CONTENT_ROOM, content, contentOnly(guild, roles));
+  await createText(guild, CHANNELS.CONTENT_CHAT, content, contentOnly(guild, roles));
 
-  const creatorCat = await createCategory(guild, CATEGORY_NAMES.CREATOR, creator);
-  await createText(guild, CHANNEL_NAMES.STREAMERS, creatorCat, creator);
-  await createText(guild, CHANNEL_NAMES.STREAM_CHAT, creatorCat, creator);
-  await createText(guild, CHANNEL_NAMES.CONTENT_ROOM, creatorCat, creator);
-  await createText(guild, CHANNEL_NAMES.CONTENT_CHAT, creatorCat, creator);
+  const creator = await createCategory(guild, CATEGORIES.CREATOR, creatorOnly(guild, roles));
+  await createText(guild, CHANNELS.STREAM_CHAT, creator, publisherOnly(guild, roles));
+  await createText(guild, CHANNELS.CONTENT_CHAT, creator, contentOnly(guild, roles));
+  await createText(guild, CHANNELS.APPLICATIONS, creator, creatorOnly(guild, roles));
 
-  const community = await createCategory(guild, CATEGORY_NAMES.COMMUNITY, normal);
-  await createText(guild, CHANNEL_NAMES.GAME, community, normal);
-  await createText(guild, CHANNEL_NAMES.LOOKING, community, normal);
-  await createText(guild, CHANNEL_NAMES.EVENTS, community, normal);
-  await createText(guild, CHANNEL_NAMES.GIVEAWAY, community, normal);
+  const gaming = await createCategory(guild, CATEGORIES.GAMING, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.GAME, gaming, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.LOOKING, gaming, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.EVENTS, gaming, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.GIVEAWAY, gaming, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.SUGGESTION, gaming, registeredOnly(guild, roles));
 
-  const support = await createCategory(guild, CATEGORY_NAMES.SUPPORT, normal);
-  await createText(guild, CHANNEL_NAMES.TICKET, support, normal);
-  await createText(guild, CHANNEL_NAMES.SUGGESTION, support, normal);
+  const support = await createCategory(guild, CATEGORIES.SUPPORT, registeredOnly(guild, roles));
+  await createText(guild, CHANNELS.TICKET, support, registeredOnly(guild, roles));
 
-  const staffCat = await createCategory(guild, CATEGORY_NAMES.STAFF, staff);
-  await createText(guild, CHANNEL_NAMES.STAFF_CHAT, staffCat, admin);
-  await createText(guild, CHANNEL_NAMES.MOD_CHAT, staffCat, staff);
-  await createText(guild, CHANNEL_NAMES.APPLICATIONS, staffCat, staff);
+  const staff = await createCategory(guild, CATEGORIES.STAFF, staffOnly(guild, roles));
+  await createText(guild, CHANNELS.STAFF_CHAT, staff, adminOnly(guild, roles));
+  await createText(guild, CHANNELS.MOD_CHAT, staff, staffOnly(guild, roles));
+  await createText(guild, CHANNELS.APPLICATIONS, staff, staffOnly(guild, roles));
 
-  const logs = await createCategory(guild, CATEGORY_NAMES.LOGS, admin);
-  await createText(guild, CHANNEL_NAMES.SERVER_LOG, logs, admin);
-  await createText(guild, CHANNEL_NAMES.MOD_LOG, logs, admin);
-  await createText(guild, CHANNEL_NAMES.MEMBER_LOG, logs, admin);
-  await createText(guild, CHANNEL_NAMES.COMMAND_LOG, logs, admin);
-  await createText(guild, CHANNEL_NAMES.MESSAGE_LOG, logs, admin);
-  await createText(guild, CHANNEL_NAMES.VOICE_LOG, logs, admin);
+  const logs = await createCategory(guild, CATEGORIES.LOGS, adminOnly(guild, roles));
+  await createText(guild, CHANNELS.SERVER_LOG, logs, adminOnly(guild, roles));
+  await createText(guild, CHANNELS.MOD_LOG, logs, staffOnly(guild, roles));
+  await createText(guild, CHANNELS.MEMBER_LOG, logs, staffOnly(guild, roles));
+  await createText(guild, CHANNELS.COMMAND_LOG, logs, staffOnly(guild, roles));
+  await createText(guild, CHANNELS.MESSAGE_LOG, logs, staffOnly(guild, roles));
+  await createText(guild, CHANNELS.VOICE_LOG, logs, staffOnly(guild, roles));
 
-  const voice = await createCategory(guild, CATEGORY_NAMES.VOICE, normal);
-  await createVoice(guild, CHANNEL_NAMES.GENERAL_VOICE, voice, normal);
-  await createVoice(guild, CHANNEL_NAMES.GAMING_VOICE, voice, normal);
-  await createVoice(guild, CHANNEL_NAMES.STREAM_VOICE, voice, normal);
-  await createVoice(guild, CHANNEL_NAMES.STAFF_VOICE, voice, staff);
+  const voice = await createCategory(guild, CATEGORIES.VOICE, registeredOnly(guild, roles));
+  await createVoice(guild, CHANNELS.GENERAL_VOICE, voice, [
+    { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.Connect, PermissionFlagsBits.ViewChannel] },
+    { id: roles.IZLEYICI.id, allow: VOICE_ALLOW },
+    { id: roles.VIP.id, allow: VOICE_ALLOW },
+    { id: roles.YAYINCI.id, allow: VOICE_ALLOW },
+    { id: roles.ICERIK.id, allow: VOICE_ALLOW },
+    { id: roles.KADIN.id, allow: VOICE_ALLOW },
+    { id: roles.MOD.id, allow: VOICE_ALLOW },
+    { id: roles.YONETIM.id, allow: VOICE_ALLOW },
+    { id: roles.KLOZN.id, allow: VOICE_ALLOW }
+  ]);
+  await createVoice(guild, CHANNELS.GAMING_VOICE, voice, registeredOnly(guild, roles));
+  await createVoice(guild, CHANNELS.STREAM_VOICE, voice, publisherOnly(guild, roles));
+  await createVoice(guild, CHANNELS.STAFF_VOICE, voice, staffOnly(guild, roles));
 
-  const womenCat = await createCategory(guild, CATEGORY_NAMES.WOMEN, women);
-  await createText(guild, CHANNEL_NAMES.WOMEN_CHAT, womenCat, women);
-  await createVoice(guild, CHANNEL_NAMES.WOMEN_VOICE, womenCat, women);
+  const women = await createCategory(guild, CATEGORIES.WOMEN, womenOnly(guild, roles));
+  await createText(guild, CHANNELS.WOMEN_CHAT, women, womenOnly(guild, roles), 'Kadın rolüne sahip üyelerin özel alanı.');
+  await createVoice(guild, CHANNELS.WOMEN_VOICE, women, womenOnly(guild, roles));
 
-  await registerChannel.send({
-    embeds: [
-      new EmbedBuilder()
-        .setTitle("🎉 KLOZN COMMUNITY • KAYIT")
-        .setDescription(
-          "Sunucuya hoş geldin!\n\n" +
-          "✅ **Kayıt Ol** butonuna basarak normal topluluk kanallarına erişebilirsin.\n\n" +
-          "🎥 Yayıncı ve 🎬 İçerik Üreticisi alanları yalnızca ilgili role sahip kişilere açıktır.\n" +
-          "🌸 Kadınlara özel alanı yalnızca **Kadın** rolü ve **Yönetici** yetkisi olan roller görebilir."
-        )
-        .setTimestamp()
-    ],
-    components: [
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("klozn_register")
-          .setLabel("Kayıt Ol")
-          .setEmoji("✅")
-          .setStyle(ButtonStyle.Success)
-      )
-    ]
+  await register.send({
+    embeds: [embed(
+      '🎉 KLOZN CREATOR • KAYIT MERKEZİ',
+      'Sunucuya hoş geldin!\n\n' +
+      '📝 **Kayıt Ol** butonuna basınca **📝 Kayıtsız** rolün kaldırılır ve **👤 İzleyici** rolün verilir.\n\n' +
+      '🎥 **Yayıncı** ve 🎬 **İçerik Üreticisi** alanları sadece ilgili role sahip üyelerindir.\n' +
+      '🌸 **Kadınlara Özel** alanlar sadece **🌸 Kadın** rolü + yönetim tarafından görülebilir.\n' +
+      '🛡️ Moderasyon ve 🔐 log kanalları normal üyelere kapalıdır.'
+    )],
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('klozn_register').setLabel('Kayıt Ol').setEmoji('✅').setStyle(ButtonStyle.Success)
+    )]
   });
 
-  return { roleCount: Object.keys(roles).length };
+  return { roleCount: Object.keys(roles).length, channelCount: guild.channels.cache.size };
 }
 
 async function deleteAllChannels(guild) {
   await guild.channels.fetch();
   const channels = [...guild.channels.cache.values()]
-    .filter(c => c.id !== guild.id)
-    .sort((a, b) => {
-      const ac = a.type === ChannelType.GuildCategory ? 1 : 0;
-      const bc = b.type === ChannelType.GuildCategory ? 1 : 0;
-      return ac - bc;
-    });
+    .filter(c => c.id !== guild.id && !c.isThread?.())
+    .sort((a, b) => (a.type === ChannelType.GuildCategory ? 1 : 0) - (b.type === ChannelType.GuildCategory ? 1 : 0));
 
   let deleted = 0;
-  let failed = 0;
-
+  const failed = [];
   for (const channel of channels) {
     try {
-      await channel.delete("KLOZN /sunucu-yenile - tam kanal sıfırlama");
+      await channel.delete('KLOZN /sunucu-yenile - tüm mevcut kanalları sil');
       deleted++;
     } catch (err) {
-      failed++;
-      console.warn(`Kanal silinemedi [${channel.name}] ${channel.id}: ${err.message}`);
+      failed.push(`${channel.name} (${channel.id})`);
+      console.error(`[KANAL SİLİNEMEDİ] ${channel.name}:`, err.message);
     }
   }
   return { deleted, failed };
@@ -404,598 +445,373 @@ async function deleteAllChannels(guild) {
 
 async function deleteAllManageableRoles(guild) {
   await guild.roles.fetch();
-  const me = guild.members.me;
-  const highest = me?.roles?.highest?.position ?? 0;
-  let deleted = 0;
-  let failed = 0;
-  let managed = 0;
-
+  if (guild.members.me) await guild.members.me.fetch();
+  const highest = guild.members.me?.roles?.highest?.position ?? 0;
   const roles = [...guild.roles.cache.values()]
-    .filter(role => role.id !== guild.id && !role.managed);
+    .filter(r => r.id !== guild.id && !r.managed)
+    .sort((a, b) => b.position - a.position);
 
-  for (const role of roles.sort((a, b) => b.position - a.position)) {
+  let deleted = 0;
+  const failed = [];
+  let managed = 0;
+  for (const role of roles) {
     if (role.position >= highest) {
-      failed++;
-      console.warn(`Rol silinemedi [${role.name}]: Bot rolü bu rolün üstünde olmalı.`);
+      failed.push(`${role.name} (${role.id}) - bot rolünün üstünde`);
       continue;
     }
     try {
-      await role.delete("KLOZN /sunucu-yenile - tam rol sıfırlama");
+      await role.delete('KLOZN /sunucu-yenile - tüm yönetilebilir rolleri sil');
       deleted++;
     } catch (err) {
-      failed++;
-      console.warn(`Rol silinemedi [${role.name}] ${role.id}: ${err.message}`);
+      failed.push(`${role.name} (${role.id})`);
+      console.error(`[ROL SİLİNEMEDİ] ${role.name}:`, err.message);
     }
   }
-
   managed = guild.roles.cache.filter(r => r.managed).size;
   return { deleted, failed, managed };
 }
 
 async function refreshServer(guild) {
-  // Kanallar önce, roller sonra: eski izin referanslarının takılmasını önler.
-  const channelResult = await deleteAllChannels(guild);
-  const roleResult = await deleteAllManageableRoles(guild);
+  if (!guild.members.me?.permissions.has(PermissionFlagsBits.Administrator)) {
+    throw new Error('Botun Administrator yetkisi olmalı.');
+  }
+
+  // Tam sıfırlama: önce tüm kanallar, sonra yönetilebilir tüm roller.
+  const channels = await deleteAllChannels(guild);
+  const roles = await deleteAllManageableRoles(guild);
   const setup = await setupServer(guild);
 
   return {
-    deletedChannels: channelResult.deleted,
-    failedChannels: channelResult.failed,
-    deletedRoles: roleResult.deleted,
-    failedRoles: roleResult.failed,
-    managedRolesRemaining: roleResult.managed,
+    deletedChannels: channels.deleted,
+    failedChannels: channels.failed,
+    deletedRoles: roles.deleted,
+    failedRoles: roles.failed,
+    managedRolesRemaining: roles.managed,
     ...setup
   };
 }
 
 async function logAction(guild, title, description) {
-  const channel = findChannel(guild, CHANNEL_NAMES.SERVER_LOG);
+  const channel = findChannel(guild, CHANNELS.SERVER_LOG);
   if (!channel?.isTextBased()) return;
-  try {
-    await channel.send({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle(title)
-          .setDescription(description)
-          .setTimestamp()
-          .setFooter({ text: "KLOZN Security & Logs" })
-      ]
-    });
-  } catch {}
+  await channel.send({ embeds: [embed(title, description)] }).catch(() => {});
 }
 
+const adminPerm = PermissionFlagsBits.Administrator.toString();
 const commands = [
+  { name: 'sunucu-yenile', description: 'Mevcut kanalları ve yönetilebilir rolleri tamamen silip şablonu yeniden kurar.', default_member_permissions: adminPerm },
+  { name: 'kurulum', description: 'KLOZN Creator sunucu şablonunu kurar.', default_member_permissions: adminPerm },
   {
-    name: "sunucu-yenile",
-    description: "Kanalları ve yönetilebilir rolleri silip KLOZN şablonunu sıfırdan kurar.",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString()
-  },
-  {
-    name: "kurulum",
-    description: "KLOZN şablonunu kurar.",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString()
-  },
-  {
-    name: "kadin-rol",
-    description: "Üyeye Kadın rolü verir veya kaldırır.",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString(),
+    name: 'rol-ver', description: 'Bir üyeye KLOZN rolü verir veya kaldırır.', default_member_permissions: adminPerm,
     options: [
-      { name: "uye", description: "Üye", type: 6, required: true },
-      {
-        name: "islem",
-        description: "Rol işlemi",
-        type: 3,
-        required: true,
-        choices: [
-          { name: "Ver", value: "ver" },
-          { name: "Kaldır", value: "kaldir" }
-        ]
-      }
+      { name: 'uye', description: 'Üye', type: 6, required: true },
+      { name: 'rol', description: 'Verilecek rol', type: 3, required: true, choices: [
+        { name: '🎥 Yayıncı', value: 'YAYINCI' },
+        { name: '🎬 İçerik Üreticisi', value: 'ICERIK' },
+        { name: '⭐ VIP İzleyici', value: 'VIP' },
+        { name: '🌸 Kadın', value: 'KADIN' },
+        { name: '👤 İzleyici', value: 'IZLEYICI' }
+      ]},
+      { name: 'islem', description: 'Rol işlemi', type: 3, required: true, choices: [{ name: 'Ver', value: 'ver' }, { name: 'Kaldır', value: 'kaldir' }] }
     ]
   },
-  {
-    name: "duyuru",
-    description: "Sunucuda duyuru gönderir.",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString(),
-    options: [
-      { name: "mesaj", description: "Duyuru metni", type: 3, required: true }
-    ]
-  },
-  {
-    name: "ban",
-    description: "Üyeyi yasaklar.",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString(),
-    options: [
-      { name: "uye", description: "Yasaklanacak üye", type: 6, required: true },
-      { name: "sebep", description: "Sebep", type: 3, required: false }
-    ]
-  },
-  {
-    name: "mute",
-    description: "Üyeyi süreli susturur.",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString(),
-    options: [
-      { name: "uye", description: "Susturulacak üye", type: 6, required: true },
-      { name: "sure", description: "Dakika", type: 4, required: true, min_value: 1, max_value: 10080 },
-      { name: "sebep", description: "Sebep", type: 3, required: false }
-    ]
-  },
-  {
-    name: "temizle",
-    description: "Mesajları temizler.",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString(),
-    options: [
-      { name: "miktar", description: "1-100", type: 4, required: true, min_value: 1, max_value: 100 }
-    ]
-  },
-  {
-    name: "ticket-kur",
-    description: "Destek ticket paneli gönderir.",
-    default_member_permissions: PermissionFlagsBits.Administrator.toString()
-  },
-  {
-    name: "klip",
-    description: "Klip kanalına klip gönderir.",
-    options: [
-      { name: "link", description: "Klip bağlantısı", type: 3, required: true },
-      { name: "baslik", description: "Klip başlığı", type: 3, required: true }
-    ]
-  },
-  { name: "bilgi", description: "Bot hakkında bilgi gösterir." },
-  { name: "ping", description: "Bot gecikmesini gösterir." }
+  { name: 'duyuru', description: 'Sunucuda duyuru gönderir.', default_member_permissions: adminPerm, options: [{ name: 'mesaj', description: 'Duyuru', type: 3, required: true }] },
+  { name: 'ban', description: 'Üyeyi yasaklar.', default_member_permissions: adminPerm, options: [{ name: 'uye', description: 'Üye', type: 6, required: true }, { name: 'sebep', description: 'Sebep', type: 3, required: false }] },
+  { name: 'mute', description: 'Üyeyi süreli susturur.', default_member_permissions: adminPerm, options: [{ name: 'uye', description: 'Üye', type: 6, required: true }, { name: 'sure', description: 'Dakika', type: 4, required: true, min_value: 1, max_value: 10080 }, { name: 'sebep', description: 'Sebep', type: 3, required: false }] },
+  { name: 'temizle', description: 'Mesajları temizler.', default_member_permissions: adminPerm, options: [{ name: 'miktar', description: '1-100', type: 4, required: true, min_value: 1, max_value: 100 }] },
+  { name: 'ticket-kur', description: 'Destek panelini gönderir.', default_member_permissions: adminPerm },
+  { name: 'klip', description: 'Klipler kanalına klip gönderir.', options: [{ name: 'link', description: 'Klip bağlantısı', type: 3, required: true }, { name: 'baslik', description: 'Başlık', type: 3, required: true }] },
+  { name: 'bilgi', description: 'Bot ve sunucu sistemi hakkında bilgi verir.' },
+  { name: 'ping', description: 'Bot gecikmesini gösterir.' }
 ];
 
 async function registerCommands() {
-  const rest = new REST({ version: "10" }).setToken(CONFIG.TOKEN);
-
-  await rest.put(
-    Routes.applicationGuildCommands(CONFIG.CLIENT_ID, CONFIG.GUILD_ID),
-    { body: commands }
-  );
-
-  try {
-    await rest.put(Routes.applicationCommands(CONFIG.CLIENT_ID), { body: [] });
-  } catch (err) {
-    console.warn("Global komut temizleme uyarısı:", err.message);
-  }
-
-  console.log(`✅ ${commands.length} slash komut guild'e kaydedildi.`);
+  const rest = new REST({ version: '10' }).setToken(CONFIG.TOKEN);
+  await rest.put(Routes.applicationGuildCommands(CONFIG.CLIENT_ID, CONFIG.GUILD_ID), { body: commands });
+  // Eski global komutlar varsa temizle; böylece eski /komutlar görünmez.
+  await rest.put(Routes.applicationCommands(CONFIG.CLIENT_ID), { body: [] }).catch(err => console.warn('Global komut temizleme:', err.message));
+  console.log(`✅ ${commands.length} guild slash komutu kaydedildi; eski global komutlar temizlendi.`);
 }
 
 async function handleCommand(interaction) {
   const command = interaction.commandName;
   const guild = interaction.guild;
+  if (!guild) return interaction.reply({ content: '❌ Bu komut sadece sunucuda kullanılabilir.', ephemeral: true });
 
-  const adminCommands = new Set([
-    "sunucu-yenile", "kurulum", "kadin-rol", "duyuru",
-    "ban", "mute", "temizle", "ticket-kur"
-  ]);
-
+  const adminCommands = new Set(['sunucu-yenile', 'kurulum', 'rol-ver', 'duyuru', 'ban', 'mute', 'temizle', 'ticket-kur']);
   if (adminCommands.has(command) && !isAdmin(interaction)) {
-    return interaction.reply({
-      content: "🔒 Bu komut yalnızca **Administrator / Yönetici** yetkisine sahip kişiler içindir.",
-      ephemeral: true
-    });
+    return interaction.reply({ content: '🔒 Bu komut sadece **Yönetici** yetkisine sahip kişiler içindir.', ephemeral: true });
   }
 
-  if (command === "ping") {
-    return interaction.reply({
-      content: `🏓 Pong! API: **${client.ws.ping}ms**`,
-      ephemeral: true
-    });
+  if (command === 'ping') return interaction.reply({ content: `🏓 Pong! API: **${client.ws.ping}ms**`, ephemeral: true });
+
+  if (command === 'bilgi') {
+    return interaction.reply({ embeds: [embed('🎥 KLOZN CREATOR',
+      '🔴 Yayıncı merkezi\n🎬 İçerik üreticisi merkezi\n🌸 Kadınlara özel alan\n🛡️ Moderasyon alanı\n🔐 Log sistemi\n\n♻️ **/sunucu-yenile** tüm yönetilebilir kanal ve rolleri silip şablonu sıfırdan kurar.')], ephemeral: true });
   }
 
-  if (command === "bilgi") {
-    return interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle("🎥 KLOZN CREATOR")
-          .setDescription(
-            "🔴 Yayın Merkezi\n" +
-            "🎬 İçerik Merkezi\n" +
-            "✨ Yayıncı & İçerik Üreticisi alanları\n" +
-            "🌸 Kadınlara özel gizli alan\n" +
-            "🎫 Ticket • 🛡️ Moderasyon • 🔐 Log\n\n" +
-            "♻️ /sunucu-yenile = tam şablon sıfırlama"
-          )
-          .setTimestamp()
-      ],
-      ephemeral: true
-    });
-  }
-
-  if (command === "sunucu-yenile") {
-    await interaction.reply({
-      content:
-        "⚠️ **TAM SUNUCU YENİLEME BAŞLADI.**\n\n" +
-        "🗑️ Mevcut kanallar siliniyor.\n" +
-        "🎭 Yönetilebilir roller siliniyor.\n" +
-        "🏗️ Yeni roller + kategoriler + kanallar kuruluyor.\n\n" +
-        "⏳ Bu işlem birkaç dakika sürebilir.",
-      ephemeral: true
-    });
-
+  if (command === 'sunucu-yenile') {
+    await interaction.reply({ content: '⚠️ **TAM SUNUCU YENİLEME BAŞLADI.**\n\n🗑️ Kanallar siliniyor...\n🎭 Yönetilebilir roller siliniyor...\n🏗️ Roller + kategoriler + kanallar yeniden kuruluyor...\n\n⏳ Lütfen işlem bitene kadar botu kapatma.', ephemeral: true });
     try {
       const result = await refreshServer(guild);
       await interaction.editReply(
-        "✅ **KLOZN sunucu şablonu sıfırdan kuruldu!**\n\n" +
+        '✅ **SUNUCU TAMAMEN YENİLENDİ!**\n\n' +
         `🗑️ Silinen kanal: **${result.deletedChannels}**\n` +
-        `⚠️ Silinemeyen kanal: **${result.failedChannels}**\n` +
+        `⚠️ Silinemeyen kanal: **${result.failedChannels.length}**\n` +
         `🎭 Silinen rol: **${result.deletedRoles}**\n` +
-        `⚠️ Silinemeyen rol: **${result.failedRoles}**\n` +
-        `🏗️ Yeni roller: **${result.roleCount}**\n\n` +
-        "🎥 Yayıncı alanı: **Yayıncı** + Yönetici\n" +
-        "🎬 İçerik üretici alanı: **İçerik Üreticisi** + Yönetici\n" +
-        "🌸 Kadın alanı: **Kadın** + Yönetici\n\n" +
-        "🔐 Kadın kanallarını Kadın rolü olmayan normal üyeler **göremez**."
+        `⚠️ Silinemeyen rol: **${result.failedRoles.length}**\n` +
+        `🏗️ Oluşturulan şablon rolü: **${result.roleCount}**\n\n` +
+        '👤 Kayıtsız → sadece başlangıç/kayıt alanı\n' +
+        '👤 İzleyici → normal topluluk alanları\n' +
+        '🎥 Yayıncı → yayıncı alanları\n' +
+        '🎬 İçerik Üreticisi → içerik alanları\n' +
+        '🌸 Kadın → kadınlara özel alanlar\n' +
+        '🛡️ Moderatör → moderasyon alanları\n' +
+        '👑 Yönetim/KLOZN → yönetim + loglar'
       );
-      await logAction(guild, "♻️ TAM SUNUCU YENİLEME", `${interaction.user.tag} tam şablon yenileme yaptı.`);
+      await logAction(guild, '♻️ TAM SUNUCU YENİLEME', `${interaction.user.tag} sunucu şablonunu sıfırdan kurdu.`);
     } catch (err) {
-      console.error("SUNUCU YENİLEME HATASI:", err);
-      try {
-        await interaction.editReply(`❌ **Yenileme başarısız:** ${err.message}`);
-      } catch {}
+      console.error('SUNUCU YENİLEME HATASI:', err);
+      await interaction.editReply(`❌ **Yenileme başarısız:** ${err.message}\n\nBotun Administrator yetkisini ve bot rolünün diğer rollerin üstünde olduğunu kontrol et.`).catch(() => {});
     }
     return;
   }
 
-  if (command === "kurulum") {
-    await interaction.reply({ content: "⚙️ KLOZN şablonu kuruluyor...", ephemeral: true });
+  if (command === 'kurulum') {
+    await interaction.reply({ content: '⚙️ KLOZN şablonu kuruluyor...', ephemeral: true });
     try {
       const result = await setupServer(guild);
-      await interaction.editReply(`✅ Kurulum tamamlandı. 🎭 ${result.roleCount} rol oluşturuldu.`);
+      await interaction.editReply(`✅ Kurulum tamamlandı. 🎭 ${result.roleCount} şablon rolü hazırlandı.`);
     } catch (err) {
       await interaction.editReply(`❌ Kurulum başarısız: ${err.message}`);
     }
     return;
   }
 
-  if (command === "kadin-rol") {
-    const member = interaction.options.getMember("uye");
-    const action = interaction.options.getString("islem", true);
-    const role = findRole(guild, ROLE_NAMES.KADIN);
-
-    if (!member || !role) {
-      return interaction.reply({
-        content: "❌ Üye veya Kadın rolü bulunamadı. Önce /kurulum çalıştır.",
-        ephemeral: true
-      });
-    }
-
+  if (command === 'rol-ver') {
+    const member = interaction.options.getMember('uye');
+    const key = interaction.options.getString('rol', true);
+    const action = interaction.options.getString('islem', true);
+    const role = findRole(guild, ROLE_NAMES[key]);
+    if (!member || !role) return interaction.reply({ content: '❌ Üye veya rol bulunamadı. Önce /kurulum ya da /sunucu-yenile çalıştır.', ephemeral: true });
     try {
-      if (action === "ver") {
-        await member.roles.add(role, "KLOZN yönetici kadın rolü");
-        await interaction.reply({ content: `🌸 ${member} kullanıcısına **Kadın** rolü verildi.`, ephemeral: true });
-      } else {
-        await member.roles.remove(role, "KLOZN yönetici kadın rolü kaldırma");
-        await interaction.reply({ content: `🌸 ${member} kullanıcısından **Kadın** rolü kaldırıldı.`, ephemeral: true });
+      if (action === 'ver') {
+        await member.roles.add(role, 'KLOZN rol yönetimi');
+        if (key === 'IZLEYICI') {
+          const unreg = findRole(guild, ROLE_NAMES.KAYITSIZ);
+          if (unreg) await member.roles.remove(unreg, 'KLOZN kayıt rolü temizleme');
+        }
+        return interaction.reply({ content: `✅ ${member} → **${role.name}** rolü verildi.`, ephemeral: true });
       }
+      await member.roles.remove(role, 'KLOZN rol yönetimi');
+      return interaction.reply({ content: `✅ ${member} → **${role.name}** rolü kaldırıldı.`, ephemeral: true });
     } catch (err) {
-      await interaction.reply({ content: `❌ Rol işlemi başarısız: ${err.message}`, ephemeral: true });
+      return interaction.reply({ content: `❌ Rol işlemi başarısız: ${err.message}`, ephemeral: true });
     }
-    return;
   }
 
-  if (command === "duyuru") {
-    const mesaj = interaction.options.getString("mesaj", true);
-    if (!interaction.channel?.isTextBased()) {
-      return interaction.reply({ content: "❌ Bu kanalda duyuru gönderemiyorum.", ephemeral: true });
-    }
-    const embed = new EmbedBuilder()
-      .setTitle("📢 KLOZN DUYURU")
-      .setDescription(mesaj)
-      .setFooter({ text: `Yetkili: ${interaction.user.tag}` })
-      .setTimestamp();
-    await interaction.channel.send({ content: "@everyone", embeds: [embed] });
-    await interaction.reply({ content: "✅ Duyuru gönderildi.", ephemeral: true });
-    return;
+  if (command === 'duyuru') {
+    const mesaj = interaction.options.getString('mesaj', true);
+    await interaction.channel.send({ content: '@everyone', embeds: [embed('📢 KLOZN DUYURU', mesaj)] });
+    return interaction.reply({ content: '✅ Duyuru gönderildi.', ephemeral: true });
   }
 
-  if (command === "ban") {
-    const member = interaction.options.getMember("uye");
-    const reason = interaction.options.getString("sebep") || "Sebep belirtilmedi.";
-    if (!member || !member.bannable) {
-      return interaction.reply({ content: "❌ Bu üyeyi banlayamıyorum. Bot rol sırasını kontrol et.", ephemeral: true });
-    }
-    await member.ban({ reason });
-    await interaction.reply({ content: `🔨 **${member.user.tag}** banlandı.`, ephemeral: true });
-    return;
+  if (command === 'ban') {
+    const member = interaction.options.getMember('uye');
+    if (!member?.bannable) return interaction.reply({ content: '❌ Bu üyeyi banlayamıyorum. Bot rol sırasını kontrol et.', ephemeral: true });
+    await member.ban({ reason: interaction.options.getString('sebep') || 'KLOZN moderasyon' });
+    return interaction.reply({ content: `🔨 **${member.user.tag}** banlandı.`, ephemeral: true });
   }
 
-  if (command === "mute") {
-    const member = interaction.options.getMember("uye");
-    const minutes = interaction.options.getInteger("sure", true);
-    const reason = interaction.options.getString("sebep") || "Sebep belirtilmedi.";
-    if (!member || !member.moderatable) {
-      return interaction.reply({ content: "❌ Bu üyeyi susturamıyorum.", ephemeral: true });
-    }
-    await member.timeout(minutes * 60 * 1000, reason);
-    await interaction.reply({ content: `🔇 **${member.user.tag}** ${minutes} dakika susturuldu.`, ephemeral: true });
-    return;
+  if (command === 'mute') {
+    const member = interaction.options.getMember('uye');
+    const minutes = interaction.options.getInteger('sure', true);
+    if (!member?.moderatable) return interaction.reply({ content: '❌ Bu üyeyi susturamıyorum.', ephemeral: true });
+    await member.timeout(minutes * 60 * 1000, interaction.options.getString('sebep') || 'KLOZN moderasyon');
+    return interaction.reply({ content: `🔇 **${member.user.tag}** ${minutes} dakika susturuldu.`, ephemeral: true });
   }
 
-  if (command === "temizle") {
-    const amount = interaction.options.getInteger("miktar", true);
-    if (!interaction.channel?.isTextBased() || !("bulkDelete" in interaction.channel)) {
-      return interaction.reply({ content: "❌ Bu kanalda toplu silme yapılamıyor.", ephemeral: true });
-    }
+  if (command === 'temizle') {
+    const amount = interaction.options.getInteger('miktar', true);
+    if (!interaction.channel?.isTextBased() || !('bulkDelete' in interaction.channel)) return interaction.reply({ content: '❌ Bu kanalda toplu silme yapılamıyor.', ephemeral: true });
     const deleted = await interaction.channel.bulkDelete(amount, true);
-    await interaction.reply({ content: `🧹 **${deleted.size}** mesaj temizlendi.`, ephemeral: true });
-    return;
+    return interaction.reply({ content: `🧹 **${deleted.size}** mesaj temizlendi.`, ephemeral: true });
   }
 
-  if (command === "ticket-kur") {
-    const support = findCategory(guild, CATEGORY_NAMES.SUPPORT);
-    if (!support) return interaction.reply({ content: "❌ Önce /kurulum çalıştır.", ephemeral: true });
-
-    const channel = findChannel(guild, CHANNEL_NAMES.TICKET, support.id);
-    if (!channel?.isTextBased()) return interaction.reply({ content: "❌ Destek kanalı bulunamadı.", ephemeral: true });
-
+  if (command === 'ticket-kur') {
+    const support = findCategory(guild, CATEGORIES.SUPPORT);
+    const channel = support && findChannel(guild, CHANNELS.TICKET, support.id);
+    if (!channel?.isTextBased()) return interaction.reply({ content: '❌ Destek kanalı bulunamadı. Önce /sunucu-yenile çalıştır.', ephemeral: true });
     await channel.send({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle("🎫 KLOZN DESTEK")
-          .setDescription("Destek talebi açmak için aşağıdaki butona bas.")
-          .setTimestamp()
-      ],
-      components: [
-        new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId("klozn_ticket")
-            .setLabel("Ticket Aç")
-            .setEmoji("🎫")
-            .setStyle(ButtonStyle.Primary)
-        )
-      ]
+      embeds: [embed('🎫 KLOZN DESTEK', 'Destek talebi açmak için aşağıdaki butona bas.')],
+      components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('klozn_ticket').setLabel('Ticket Aç').setEmoji('🎫').setStyle(ButtonStyle.Primary))]
     });
-
-    await interaction.reply({ content: "✅ Ticket paneli gönderildi.", ephemeral: true });
-    return;
+    return interaction.reply({ content: '✅ Ticket paneli gönderildi.', ephemeral: true });
   }
 
-  if (command === "klip") {
-    const link = interaction.options.getString("link", true);
-    const title = interaction.options.getString("baslik", true);
-    const channel = findChannel(guild, CHANNEL_NAMES.CLIPS);
-    if (!channel?.isTextBased()) {
-      return interaction.reply({ content: "❌ Klip kanalı bulunamadı.", ephemeral: true });
-    }
-    await channel.send({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle(`🎬 ${title}`)
-          .setDescription(`🔗 **[KLİBİ İZLE](${link})**`)
-          .addFields({ name: "👤 Paylaşan", value: interaction.user.toString() })
-          .setTimestamp()
-      ]
-    });
-    await interaction.reply({ content: "🎬 Klip paylaşıldı.", ephemeral: true });
+  if (command === 'klip') {
+    const member = interaction.member;
+    const allowed = [ROLE_NAMES.YAYINCI, ROLE_NAMES.ICERIK, ROLE_NAMES.MOD, ROLE_NAMES.YONETIM, ROLE_NAMES.KLOZN].some(n => member.roles.cache.some(r => r.name === n));
+    if (!allowed) return interaction.reply({ content: '🎥 Bu komut sadece Yayıncı/İçerik Üreticisi/Yönetim içindir.', ephemeral: true });
+    const channel = findChannel(guild, CHANNELS.CLIPS);
+    if (!channel?.isTextBased()) return interaction.reply({ content: '❌ Klip kanalı bulunamadı.', ephemeral: true });
+    const link = interaction.options.getString('link', true);
+    const title = interaction.options.getString('baslik', true);
+    await channel.send({ embeds: [new EmbedBuilder().setTitle(`✂️ ${title}`).setDescription(`🔗 [Klibi izle](${link})`).addFields({ name: '👤 Paylaşan', value: interaction.user.toString() }).setTimestamp()] });
+    return interaction.reply({ content: '🎬 Klip paylaşıldı.', ephemeral: true });
   }
 }
 
-client.on("interactionCreate", async interaction => {
+client.on('interactionCreate', async interaction => {
   try {
-    if (interaction.isChatInputCommand()) {
-      await handleCommand(interaction);
-      return;
-    }
-
+    if (interaction.isChatInputCommand()) return handleCommand(interaction);
     if (!interaction.isButton()) return;
 
-    if (interaction.customId === "klozn_register") {
+    if (interaction.customId === 'klozn_register') {
       const guild = interaction.guild;
       const member = interaction.member;
-      const viewerRole = findRole(guild, ROLE_NAMES.IZLEYICI);
+      const viewer = findRole(guild, ROLE_NAMES.IZLEYICI);
       const unregistered = findRole(guild, ROLE_NAMES.KAYITSIZ);
-
-      if (!viewerRole) {
-        return interaction.reply({ content: "❌ İzleyici rolü bulunamadı.", ephemeral: true });
-      }
-
-      await member.roles.add(viewerRole, "KLOZN kayıt");
-      if (unregistered && member.roles.cache.has(unregistered.id)) {
-        await member.roles.remove(unregistered, "KLOZN kayıt");
-      }
-
-      await interaction.reply({
-        content: "🎉 **Kayıt tamamlandı!** Normal topluluk kanallarına erişimin açıldı.",
-        ephemeral: true
-      });
-      return;
+      if (!viewer) return interaction.reply({ content: '❌ İzleyici rolü bulunamadı. /sunucu-yenile çalıştır.', ephemeral: true });
+      await member.roles.add(viewer, 'KLOZN kayıt');
+      if (unregistered && member.roles.cache.has(unregistered.id)) await member.roles.remove(unregistered, 'KLOZN kayıt tamamlandı');
+      return interaction.reply({ content: '🎉 **Kayıt tamamlandı!** Normal topluluk kanallarına erişimin açıldı.', ephemeral: true });
     }
 
-    if (interaction.customId === "klozn_ticket") {
+    if (interaction.customId === 'klozn_ticket') {
       const guild = interaction.guild;
-      const userName = interaction.user.username.toLowerCase().replace(/[^a-z0-9-_]/g, "").slice(0, 20) || interaction.user.id.slice(-6);
-      const existing = guild.channels.cache.find(c => c.name === `ticket-${userName}`);
-      if (existing) {
-        return interaction.reply({ content: `🎫 Zaten açık ticket'ın var: ${existing}`, ephemeral: true });
-      }
-
-      const support = findCategory(guild, CATEGORY_NAMES.SUPPORT);
+      const support = findCategory(guild, CATEGORIES.SUPPORT);
       const roles = await createRoles(guild);
-      const overwrites = [
-        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-        { id: interaction.user.id, allow: textAllow },
-        ...[roles.KLOZN, roles.YONETIM, roles.MOD].map(role => ({ id: role.id, allow: textAllow }))
-      ];
-
+      const existing = guild.channels.cache.find(c => c.name === `ticket-${interaction.user.id}`);
+      if (existing) return interaction.reply({ content: `🎫 Zaten açık ticket'ın var: ${existing}`, ephemeral: true });
       const ticket = await guild.channels.create({
-        name: `ticket-${userName}`,
+        name: `ticket-${interaction.user.id}`,
         type: ChannelType.GuildText,
         parent: support?.id,
-        permissionOverwrites: overwrites,
-        reason: "KLOZN ticket"
+        permissionOverwrites: [
+          { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: interaction.user.id, allow: TEXT_ALLOW },
+          { id: roles.MOD.id, allow: TEXT_ALLOW },
+          { id: roles.YONETIM.id, allow: TEXT_ALLOW },
+          { id: roles.KLOZN.id, allow: TEXT_ALLOW }
+        ],
+        reason: 'KLOZN ticket'
       });
-
       await ticket.send({
         content: `${interaction.user}`,
-        embeds: [
-          new EmbedBuilder()
-            .setTitle("🎫 KLOZN DESTEK")
-            .setDescription("Destek talebin oluşturuldu.")
-        ],
-        components: [
-          new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-              .setCustomId("klozn_ticket_close")
-              .setLabel("Ticket Kapat")
-              .setEmoji("🔒")
-              .setStyle(ButtonStyle.Danger)
-          )
-        ]
+        embeds: [embed('🎫 KLOZN DESTEK', 'Destek talebin oluşturuldu. Yetkili bekleyebilirsin.')],
+        components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('klozn_ticket_close').setLabel('Ticket Kapat').setEmoji('🔒').setStyle(ButtonStyle.Danger))]
       });
-
-      await interaction.reply({ content: `🎫 Ticket oluşturuldu: ${ticket}`, ephemeral: true });
-      return;
+      return interaction.reply({ content: `🎫 Ticket oluşturuldu: ${ticket}`, ephemeral: true });
     }
 
-    if (interaction.customId === "klozn_ticket_close") {
-      if (!isAdmin(interaction)) {
-        return interaction.reply({ content: "🔒 Ticket kapatmak için Administrator yetkisi gerekir.", ephemeral: true });
-      }
-      await interaction.reply({ content: "🔒 Ticket kapatılıyor...", ephemeral: true });
-      setTimeout(() => interaction.channel?.delete("KLOZN ticket close").catch(() => {}), 1000);
+    if (interaction.customId === 'klozn_ticket_close') {
+      if (!isAdmin(interaction)) return interaction.reply({ content: '🔒 Ticket kapatmak için Yönetici gerekir.', ephemeral: true });
+      await interaction.reply({ content: '🔒 Ticket kapatılıyor...', ephemeral: true });
+      setTimeout(() => interaction.channel?.delete('KLOZN ticket kapatma').catch(() => {}), 800);
     }
   } catch (err) {
-    console.error("[INTERACTION ERROR]", err);
+    console.error('[INTERACTION ERROR]', err);
+    const reply = { content: '❌ İşlem sırasında hata oluştu. Render loglarını kontrol et.', ephemeral: true };
     try {
-      const reply = { content: "❌ İşlem sırasında hata oluştu. Render loglarını kontrol et.", ephemeral: true };
       if (interaction.replied || interaction.deferred) await interaction.followUp(reply);
       else await interaction.reply(reply);
     } catch {}
   }
 });
 
-client.on("guildMemberAdd", async member => {
+client.on('guildMemberAdd', async member => {
   try {
     const role = findRole(member.guild, ROLE_NAMES.KAYITSIZ);
-    if (role) await member.roles.add(role, "KLOZN yeni üye");
-    await logAction(member.guild, "👤 ÜYE GİRDİ", `**Üye:** ${member.user.tag}\n**ID:** ${member.id}`);
+    if (role) await member.roles.add(role, 'KLOZN yeni üye - kayıtsız');
+    await logAction(member.guild, '👤 ÜYE GİRDİ', `**Üye:** ${member.user.tag}\n**ID:** ${member.id}`);
   } catch (err) {
-    console.error("guildMemberAdd:", err.message);
+    console.error('guildMemberAdd:', err.message);
   }
 });
 
-client.on("guildMemberRemove", async member => {
-  try {
-    await logAction(member.guild, "🚪 ÜYE ÇIKTI", `**Üye:** ${member.user.tag}\n**ID:** ${member.id}`);
-  } catch {}
+client.on('guildMemberRemove', async member => {
+  await logAction(member.guild, '🚪 ÜYE ÇIKTI', `**Üye:** ${member.user.tag}\n**ID:** ${member.id}`).catch(() => {});
 });
 
-const BAD_WORDS = ["discord.gg/", "http://", "https://", "@everyone", "@here"];
-
-client.on("messageCreate", async message => {
+const BAD_WORDS = ['discord.gg/', 'http://', 'https://', '@everyone', '@here'];
+client.on('messageCreate', async message => {
   if (!CONFIG.AUTOMOD || !message.guild || message.author.bot) return;
   try {
     if (message.member?.permissions?.has(PermissionFlagsBits.Administrator)) return;
     const content = message.content.toLowerCase();
     if (!BAD_WORDS.some(word => content.includes(word.toLowerCase()))) return;
     await message.delete().catch(() => {});
-    await message.member?.timeout(60_000, "KLOZN AutoMod").catch(() => {});
-    await logAction(
-      message.guild,
-      "🛡️ AUTOMOD",
-      `**Üye:** ${message.author.tag}\n**Kanal:** ${message.channel}\n**İçerik:** ${message.content}`
-    );
+    await message.member?.timeout(60_000, 'KLOZN AutoMod').catch(() => {});
+    await logAction(message.guild, '🛡️ AUTOMOD', `**Üye:** ${message.author.tag}\n**Kanal:** ${message.channel}\n**İçerik:** ${message.content}`);
   } catch (err) {
-    console.error("AutoMod:", err.message);
+    console.error('AutoMod:', err.message);
   }
 });
 
 let lastYouTubeVideo = null;
-
 function checkYouTube() {
   if (!CONFIG.YOUTUBE_RSS || !CONFIG.YOUTUBE_CHANNEL_ID) return;
-
   const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(CONFIG.YOUTUBE_CHANNEL_ID)}`;
-
   https.get(url, response => {
-    let data = "";
-    response.on("data", chunk => { data += chunk; });
-    response.on("end", async () => {
+    let data = '';
+    response.on('data', chunk => { data += chunk; });
+    response.on('end', async () => {
       const idMatch = data.match(/<yt:videoId>(.*?)<\/yt:videoId>/);
       const titleMatch = data.match(/<media:title>(.*?)<\/media:title>/);
       if (!idMatch) return;
-
       const videoId = idMatch[1];
-      const title = titleMatch ? titleMatch[1] : "Yeni YouTube Videosu";
       if (lastYouTubeVideo === videoId) return;
       lastYouTubeVideo = videoId;
-
       const guild = client.guilds.cache.get(CONFIG.GUILD_ID);
-      if (!guild) return;
-      const channel = findChannel(guild, CHANNEL_NAMES.VIDEOS);
+      const channel = guild && findChannel(guild, CHANNELS.VIDEOS);
       if (!channel?.isTextBased()) return;
-
-      await channel.send({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle("▶️ KLOZN YENİ VİDEO")
-            .setDescription(`**${title}**\n\n📺 YouTube'da şimdi yayında!`)
-            .addFields({ name: "🔗 Video", value: `https://www.youtube.com/watch?v=${videoId}` })
-            .setTimestamp()
-        ]
-      }).catch(() => {});
+      await channel.send({ embeds: [embed('▶️ KLOZN YENİ VİDEO', `**${titleMatch ? titleMatch[1] : 'Yeni YouTube Videosu'}**\n\n🔗 https://www.youtube.com/watch?v=${videoId}`)] }).catch(() => {});
     });
-  }).on("error", err => console.error("YouTube RSS:", err.message));
+  }).on('error', err => console.error('YouTube RSS:', err.message));
 }
 
 const healthServer = http.createServer((req, res) => {
-  if (req.url === "/" || req.url === "/health") {
-    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    res.end(JSON.stringify({
-      ok: true,
-      service: "KLOZN Discord Bot",
-      discordReady: client.isReady(),
-      guilds: client.guilds.cache.size,
-      uptimeSeconds: Math.floor(process.uptime()),
-      timestamp: new Date().toISOString()
-    }));
+  if (req.url === '/' || req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, service: 'KLOZN Discord Bot', discordReady: client.isReady(), guilds: client.guilds.cache.size, uptimeSeconds: Math.floor(process.uptime()), timestamp: new Date().toISOString() }));
     return;
   }
   res.writeHead(404);
-  res.end("Not Found");
+  res.end('Not Found');
 });
 
-healthServer.listen(CONFIG.PORT, "0.0.0.0", () => {
-  console.log(`🌐 HTTP health server: 0.0.0.0:${CONFIG.PORT}`);
-});
+healthServer.listen(CONFIG.PORT, '0.0.0.0', () => console.log(`🌐 HTTP health server: 0.0.0.0:${CONFIG.PORT}`));
 
-client.once("ready", async () => {
-  console.log("==========================================");
-  console.log("🚀 KLOZN CREATOR BOT AKTİF • v9.0.0");
-  console.log(`🤖 Bot: ${client.user.tag}`);
-  console.log(`🏠 Guild cache: ${client.guilds.cache.size}`);
+client.once('ready', async readyClient => {
+  console.log('==========================================');
+  console.log(`🚀 KLOZN CREATOR BOT AKTİF • v10.0.0`);
+  console.log(`🤖 Bot: ${readyClient.user.tag}`);
+  console.log(`🏠 Guild cache: ${readyClient.guilds.cache.size}`);
   console.log(`🎯 Hedef Guild: ${CONFIG.GUILD_ID}`);
-  console.log("🔐 /sunucu-yenile: ADMIN ONLY");
-  console.log("🌸 Kadın: KADIN + ADMIN");
-  console.log("==========================================");
+  console.log('🔐 /sunucu-yenile: SADECE YÖNETİCİ');
+  console.log('👤 Kayıtsız: sadece başlangıç alanı');
+  console.log('🌸 Kadın: sadece KADIN + Yönetim/KLOZN');
+  console.log('==========================================');
 
-  client.user.setPresence({
-    activities: [{ name: "KLOZN Creator", type: 3 }],
-    status: "online"
-  });
+  readyClient.user.setPresence({ activities: [{ name: 'KLOZN Creator', type: ActivityType.Watching }], status: 'online' });
 
   try {
     await registerCommands();
   } catch (err) {
-    console.error("Slash komut kayıt hatası:", err);
+    console.error('Slash komut kayıt hatası:', err);
   }
 
-  const guild = client.guilds.cache.get(CONFIG.GUILD_ID);
+  const guild = readyClient.guilds.cache.get(CONFIG.GUILD_ID);
   if (!guild) {
-    console.error("❌ GUILD_ID ile belirtilen sunucu bulunamadı.");
+    console.error('❌ GUILD_ID ile belirtilen sunucu bulunamadı.');
     return;
   }
-
-  // Açılışta otomatik silme yok. Tam sıfırlama sadece /sunucu-yenile ile yapılır.
   try {
-    await guild.roles.fetch();
-    await guild.channels.fetch();
-    console.log("✅ Discord sunucu önbelleği hazır.");
+    await fetchGuildState(guild);
+    console.log('✅ Discord sunucu önbelleği hazır.');
   } catch (err) {
-    console.error("Guild fetch:", err.message);
+    console.error('Guild fetch:', err.message);
   }
 
   if (CONFIG.YOUTUBE_RSS) {
@@ -1003,19 +819,15 @@ client.once("ready", async () => {
     setInterval(checkYouTube, 120_000);
   }
 
-  setInterval(() => {
-    console.log(
-      `[HEALTH] ready=${client.isReady()} guilds=${client.guilds.cache.size} ping=${client.ws.ping} uptime=${Math.floor(process.uptime())}s`
-    );
-  }, 60_000);
+  setInterval(() => console.log(`[HEALTH] ready=${readyClient.isReady()} guilds=${readyClient.guilds.cache.size} ping=${readyClient.ws.ping} uptime=${Math.floor(process.uptime())}s`), 60_000);
 });
 
-client.on("error", err => console.error("[DISCORD CLIENT ERROR]", err));
-client.on("shardError", err => console.error("[DISCORD SHARD ERROR]", err));
-process.on("unhandledRejection", err => console.error("[UNHANDLED REJECTION]", err));
-process.on("uncaughtException", err => console.error("[UNCAUGHT EXCEPTION]", err));
+client.on('error', err => console.error('[DISCORD CLIENT ERROR]', err));
+client.on('shardError', err => console.error('[DISCORD SHARD ERROR]', err));
+process.on('unhandledRejection', err => console.error('[UNHANDLED REJECTION]', err));
+process.on('uncaughtException', err => console.error('[UNCAUGHT EXCEPTION]', err));
 
 client.login(CONFIG.TOKEN).catch(err => {
-  console.error("❌ Discord login başarısız:", err);
+  console.error('❌ Discord login başarısız:', err);
   process.exit(1);
 });
